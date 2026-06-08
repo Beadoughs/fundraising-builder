@@ -92,18 +92,23 @@ export function ensureDatabaseReady(): void {
   const runtimePath = getRuntimeDatabasePath();
   if (!runtimePath) return;
 
-  if (isVercelSqlite() && !existsSync(runtimePath)) {
-    const bundledPath = getBundledDatabasePath();
-    if (bundledPath) {
-      try {
-        mkdirSync(dirname(runtimePath), { recursive: true });
-        copyFileSync(bundledPath, runtimePath);
-      } catch (error) {
-        console.error("Failed to copy bundled database:", error);
+  if (isVercelSqlite()) {
+    const needsInit =
+      !existsSync(runtimePath) || statSync(runtimePath).size === 0;
+
+    if (needsInit) {
+      const bundledPath = getBundledDatabasePath();
+      if (bundledPath) {
+        try {
+          mkdirSync(dirname(runtimePath), { recursive: true });
+          copyFileSync(bundledPath, runtimePath);
+        } catch (error) {
+          console.error("Failed to copy bundled database:", error);
+          bootstrapRuntimeSchema(runtimePath);
+        }
+      } else {
         bootstrapRuntimeSchema(runtimePath);
       }
-    } else {
-      bootstrapRuntimeSchema(runtimePath);
     }
   }
 

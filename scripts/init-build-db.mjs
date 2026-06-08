@@ -2,8 +2,10 @@ import { execSync } from "child_process";
 import { rmSync, writeFileSync } from "fs";
 import { join } from "path";
 
-const buildDbUrl = process.env.DATABASE_URL ?? "file:./prisma/build.db";
-const buildDbPath = buildDbUrl.replace(/^file:/, "");
+// Always write to prisma/build.db so Vercel file tracing can bundle it,
+// regardless of DATABASE_URL set in the Vercel project env.
+const buildDbUrl = "file:./prisma/build.db";
+const buildDbPath = "prisma/build.db";
 const schemaPath = "prisma/schema.prisma";
 const schemaSqlPath = "prisma/build-schema.sql";
 const prismaCli = join(process.cwd(), "node_modules", ".bin", "prisma");
