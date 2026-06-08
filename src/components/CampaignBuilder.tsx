@@ -83,20 +83,52 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
   }
 
   function parsePayload() {
+    if (!form.name.trim()) {
+      throw new Error("Campaign name is required");
+    }
+    if (!form.orgName.trim()) {
+      throw new Error("Organisation name is required");
+    }
+
     const products = form.products
-      .filter((p) => p.name.trim() && p.price.trim())
-      .map((p, i) => ({
-        name: p.name.trim(),
-        price: Math.round(parseFloat(p.price) * 100),
-        imageUrl: p.imageUrl || null,
-        quantityLimit: p.quantityLimit
+      .filter((p) => p.name.trim() || p.price.trim())
+      .map((p, i) => {
+        if (!p.name.trim()) {
+          throw new Error("Each product needs a name");
+        }
+        const priceCents = Math.round(parseFloat(p.price) * 100);
+        if (!Number.isFinite(priceCents) || priceCents <= 0) {
+          throw new Error(`Enter a valid price for "${p.name.trim()}"`);
+        }
+        const quantityLimit = p.quantityLimit.trim()
           ? parseInt(p.quantityLimit, 10)
-          : null,
-        sortOrder: i,
-      }));
+          : null;
+        if (
+          quantityLimit !== null &&
+          (!Number.isFinite(quantityLimit) || quantityLimit <= 0)
+        ) {
+          throw new Error(`Enter a valid stock limit for "${p.name.trim()}"`);
+        }
+        return {
+          name: p.name.trim(),
+          price: priceCents,
+          imageUrl: p.imageUrl || null,
+          quantityLimit,
+          sortOrder: i,
+        };
+      });
 
     if (products.length === 0) {
       throw new Error("Add at least one product with a name and price");
+    }
+
+    let goalAmount: number | null = null;
+    if (form.goalAmount.trim()) {
+      const goalCents = Math.round(parseFloat(form.goalAmount) * 100);
+      if (!Number.isFinite(goalCents) || goalCents <= 0) {
+        throw new Error("Enter a valid fundraising goal");
+      }
+      goalAmount = goalCents;
     }
 
     return {
@@ -104,9 +136,7 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       orgName: form.orgName.trim(),
       description: form.description.trim() || null,
       logoUrl: form.logoUrl || null,
-      goalAmount: form.goalAmount
-        ? Math.round(parseFloat(form.goalAmount) * 100)
-        : null,
+      goalAmount,
       products,
     };
   }

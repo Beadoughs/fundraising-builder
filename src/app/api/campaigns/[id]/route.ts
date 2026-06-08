@@ -1,4 +1,5 @@
 import { getDefaultOrganiserId } from "@/lib/organiser";
+import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -66,15 +67,16 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const userId = await getDefaultOrganiserId();
-
-  const { id } = await context.params;
-  const existing = await getOwnedCampaign(id, userId);
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   try {
+    ensureDatabaseReady();
+    const userId = await getDefaultOrganiserId();
+
+    const { id } = await context.params;
+    const existing = await getOwnedCampaign(id, userId);
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const body = await request.json();
     const data = updateSchema.parse(body);
 
@@ -128,11 +130,10 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 400 }
       );
     }
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to update campaign" },
-      { status: 500 }
-    );
+    console.error("Update campaign error:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to update campaign";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

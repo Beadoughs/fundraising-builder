@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
-import { copyFileSync, existsSync } from "fs";
-import { join } from "path";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { dirname, join } from "path";
 import {
   BUNDLED_DATABASE_PATH,
   ensureDatabaseUrl,
@@ -33,6 +33,15 @@ function getRuntimeDatabasePath(): string | null {
   return url.replace(/^file:/, "");
 }
 
+function initEmptyDatabase(runtimePath: string): void {
+  mkdirSync(dirname(runtimePath), { recursive: true });
+  process.env.DATABASE_URL = `file:${runtimePath}`;
+  execSync("npx prisma db push --skip-generate", {
+    env: process.env,
+    stdio: "pipe",
+  });
+}
+
 /** Prepare a writable SQLite database on Vercel before Prisma queries run. */
 export function ensureDatabaseReady(): void {
   if (initialized) return;
@@ -47,12 +56,14 @@ export function ensureDatabaseReady(): void {
 
   const bundledPath = getBundledDatabasePath();
   if (bundledPath) {
-    copyFileSync(bundledPath, runtimePath);
-    return;
+    try {
+      mkdirSync(dirname(runtimePath), { recursive: true });
+      copyFileSync(bundledPath, runtimePath);
+      return;
+    } catch (error) {
+      console.error("Failed to copy bundled database:", error);
+    }
   }
 
-  execSync("npx prisma db push --skip-generate", {
-    env: process.env,
-    stdio: "pipe",
-  });
+  initEmptyDatabase(runtimePath);
 }

@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/SafeImage";
 import { FieldGroup, Label } from "@/components/ui/Form";
+import { compressImageFile } from "@/lib/compress-image";
 import { useRef, useState } from "react";
 
-const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
+const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 export function ImageUpload({
   value,
@@ -28,15 +29,15 @@ export function ImageUpload({
       return;
     }
 
-    if (file.size > MAX_IMAGE_BYTES) {
-      setError("Image must be under 1.5MB");
+    if (file.size > MAX_FILE_BYTES) {
+      setError("Image must be under 5MB");
       return;
     }
 
     setUploading(true);
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await compressImageFile(file);
       onChange(dataUrl);
     } catch {
       setError("Could not read image. Try a different file.");
@@ -91,21 +92,11 @@ export function ImageUpload({
             </button>
           )}
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-          <p className="mt-2 text-xs text-gray-400">JPG or PNG, max 1.5MB</p>
+          <p className="mt-2 text-xs text-gray-400">
+            JPG or PNG — automatically resized for upload
+          </p>
         </div>
       </div>
     </FieldGroup>
   );
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("Invalid file"));
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }

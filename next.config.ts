@@ -2,10 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/*": ["./prisma/build.db"],
-    "/dashboard": ["./prisma/build.db"],
-    "/dashboard/*": ["./prisma/build.db"],
-    "/api/*": ["./prisma/build.db"],
+    "/*": ["./prisma/build.db", "./prisma/schema.prisma"],
+    "/dashboard": ["./prisma/build.db", "./prisma/schema.prisma"],
+    "/dashboard/*": ["./prisma/build.db", "./prisma/schema.prisma"],
+    "/api/*": ["./prisma/build.db", "./prisma/schema.prisma"],
   },
 };
 

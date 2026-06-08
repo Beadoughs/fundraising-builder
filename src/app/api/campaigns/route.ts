@@ -1,4 +1,5 @@
 import { getDefaultOrganiserId } from "@/lib/organiser";
+import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { nanoid } from "nanoid";
@@ -58,9 +59,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const userId = await getDefaultOrganiserId();
-
   try {
+    ensureDatabaseReady();
+    const userId = await getDefaultOrganiserId();
     const body = await request.json();
     const data = campaignSchema.parse(body);
     const slug = await uniqueSlug(data.name);
@@ -98,10 +99,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to create campaign" },
-      { status: 500 }
-    );
+    console.error("Create campaign error:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to create campaign";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
