@@ -1,0 +1,361 @@
+"use client";
+
+import { Button } from "@/components/ui/Button";
+import { Card, FieldGroup, Label } from "@/components/ui/Form";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { ImageUpload } from "@/components/ImageUpload";
+import { formatCurrency } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export type ProductDraft = {
+  name: string;
+  price: string;
+  imageUrl: string;
+  quantityLimit: string;
+};
+
+export type CampaignDraft = {
+  name: string;
+  orgName: string;
+  description: string;
+  logoUrl: string;
+  goalAmount: string;
+  products: ProductDraft[];
+};
+
+const emptyProduct = (): ProductDraft => ({
+  name: "",
+  price: "",
+  imageUrl: "",
+  quantityLimit: "",
+});
+
+type CampaignBuilderProps = {
+  initial?: CampaignDraft & { id?: string; published?: boolean; slug?: string };
+  mode: "create" | "edit";
+};
+
+export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState<CampaignDraft>(
+    initial || {
+      name: "",
+      orgName: "",
+      description: "",
+      logoUrl: "",
+      goalAmount: "",
+      products: [emptyProduct()],
+    }
+  );
+
+  function updateField<K extends keyof CampaignDraft>(
+    key: K,
+    value: CampaignDraft[K]
+  ) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function updateProduct(index: number, patch: Partial<ProductDraft>) {
+    setForm((prev) => ({
+      ...prev,
+      products: prev.products.map((p, i) =>
+        i === index ? { ...p, ...patch } : p
+      ),
+    }));
+  }
+
+  function addProduct() {
+    setForm((prev) => ({
+      ...prev,
+      products: [...prev.products, emptyProduct()],
+    }));
+  }
+
+  function removeProduct(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      products: prev.products.filter((_, i) => i !== index),
+    }));
+  }
+
+  function parsePayload(published?: boolean) {
+    const products = form.products
+      .filter((p) => p.name.trim() && p.price.trim())
+      .map((p, i) => ({
+        name: p.name.trim(),
+        price: Math.round(parseFloat(p.price) * 100),
+        imageUrl: p.imageUrl || null,
+        quantityLimit: p.quantityLimit
+          ? parseInt(p.quantityLimit, 10)
+          : null,
+        sortOrder: i,
+      }));
+
+    if (products.length === 0) {
+      throw new Error("Add at least one product with a name and price");
+    }
+
+    return {
+      name: form.name.trim(),
+      orgName: form.orgName.trim(),
+      description: form.description.trim() || null,
+      logoUrl: form.logoUrl || null,
+      goalAmount: form.goalAmount
+        ? Math.round(parseFloat(form.goalAmount) * 100)
+        : null,
+      published,
+      products,
+    };
+  }
+
+  async function save() {
+    setError("");
+    setSaving(true);
+
+    try {
+      const payload = parsePayload(false);
+
+      const url =
+        mode === "edit" && initial?.id
+          ? `/api/campaigns/${initial.id}`
+          : "/api/campaigns";
+      const method = mode === "edit" ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+
+      if (mode === "create") {
+        router.push(`/dashboard/campaigns/${data.id}/preview`);
+      } else {
+        router.push(`/dashboard/campaigns/${initial!.id}/preview`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <Card className="mb-6">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900">
+          Campaign details
+        </h2>
+        <p className="mb-6 text-sm text-gray-500">
+          Basic info buyers will see on your public page.
+        </p>
+
+        <FieldGroup>
+          <Label htmlFor="name">Campaign name</Label>
+          <Input
+            id="name"
+            placeholder="e.g. Year 6 Doughnut Drive"
+            value={form.name}
+            onChange={(e) => updateField("name", e.target.value)}
+          />
+        </FieldGroup>
+
+        <FieldGroup>
+          <Label htmlFor="orgName">Organisation name</Label>
+          <Input
+            id="orgName"
+            placeholder="e.g. Riverside Primary School"
+            value={form.orgName}
+            onChange={(e) => updateField("orgName", e.target.value)}
+          />
+        </FieldGroup>
+
+        <FieldGroup>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Tell supporters what you're raising for…"
+            value={form.description}
+            onChange={(e) => updateField("description", e.target.value)}
+          />
+        </FieldGroup>
+
+        <ImageUpload
+          label="Logo or campaign image"
+          value={form.logoUrl}
+          onChange={(url) => updateField("logoUrl", url)}
+        />
+
+        <FieldGroup>
+          <Label htmlFor="goal">Fundraising goal (optional)</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+              $
+            </span>
+            <Input
+              id="goal"
+              type="number"
+              min="0"
+              step="0.01"
+              className="pl-7"
+              placeholder="5000"
+              value={form.goalAmount}
+              onChange={(e) => updateField("goalAmount", e.target.value)}
+            />
+          </div>
+        </FieldGroup>
+      </Card>
+
+      <Card className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Products</h2>
+            <p className="text-sm text-gray-500">
+              What are you selling to raise funds?
+            </p>
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={addProduct}>
+            + Add product
+          </Button>
+        </div>
+
+        <div className="space-y-6">
+          {form.products.map((product, index) => (
+            <div
+              key={index}
+              className="rounded-lg border border-gray-100 bg-gray-50/50 p-4"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Product {index + 1}
+                </span>
+                {form.products.length > 1 && (
+                  <button
+                    type="button"
+                    className="text-sm text-red-500 hover:text-red-700"
+                    onClick={() => removeProduct(index)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              <FieldGroup>
+                <Label>Product name</Label>
+                <Input
+                  placeholder="e.g. Box of 6 glazed doughnuts"
+                  value={product.name}
+                  onChange={(e) =>
+                    updateProduct(index, { name: e.target.value })
+                  }
+                />
+              </FieldGroup>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FieldGroup className="mb-0">
+                  <Label>Price ($)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="12.00"
+                    value={product.price}
+                    onChange={(e) =>
+                      updateProduct(index, { price: e.target.value })
+                    }
+                  />
+                </FieldGroup>
+                <FieldGroup className="mb-0">
+                  <Label>Stock limit (optional)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="100"
+                    value={product.quantityLimit}
+                    onChange={(e) =>
+                      updateProduct(index, { quantityLimit: e.target.value })
+                    }
+                  />
+                </FieldGroup>
+              </div>
+
+              <ImageUpload
+                label="Product image"
+                value={product.imageUrl}
+                onChange={(url) => updateProduct(index, { imageUrl: url })}
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        {mode === "create" ? (
+          <Button
+            type="button"
+            disabled={saving}
+            onClick={() => save()}
+            className="flex-1"
+            size="lg"
+          >
+            {saving ? "Saving…" : "Continue to preview"}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            disabled={saving}
+            onClick={() => save()}
+            className="flex-1"
+            size="lg"
+          >
+            {saving ? "Saving…" : "Save & preview"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function campaignToDraft(campaign: {
+  name: string;
+  orgName: string;
+  description: string | null;
+  logoUrl: string | null;
+  goalAmount: number | null;
+  products: {
+    name: string;
+    price: number;
+    imageUrl: string | null;
+    quantityLimit: number | null;
+  }[];
+}): CampaignDraft {
+  return {
+    name: campaign.name,
+    orgName: campaign.orgName,
+    description: campaign.description || "",
+    logoUrl: campaign.logoUrl || "",
+    goalAmount: campaign.goalAmount
+      ? String(campaign.goalAmount / 100)
+      : "",
+    products: campaign.products.length
+      ? campaign.products.map((p) => ({
+          name: p.name,
+          price: String(p.price / 100),
+          imageUrl: p.imageUrl || "",
+          quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
+        }))
+      : [emptyProduct()],
+  };
+}
