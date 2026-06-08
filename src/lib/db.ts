@@ -6,16 +6,16 @@ import { PrismaClient } from "@prisma/client";
 ensureDatabaseUrl();
 
 function createPrismaClient(): PrismaClient {
-  if (canUseTurso()) {
-    const adapter = new PrismaLibSQL({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN!,
-    });
-    return new PrismaClient({ adapter });
-  }
-
   ensureDatabaseReady();
-  return new PrismaClient();
+
+  const url = ensureDatabaseUrl();
+  const adapter = new PrismaLibSQL(
+    canUseTurso()
+      ? { url, authToken: process.env.TURSO_AUTH_TOKEN! }
+      : { url }
+  );
+
+  return new PrismaClient({ adapter });
 }
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };

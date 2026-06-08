@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "prisma generate && prisma db push && next dev",
-    "build": "DATABASE_URL=\"${DATABASE_URL:-file:./prisma/build.db}\" prisma generate && DATABASE_URL=\"${DATABASE_URL:-file:./prisma/build.db}\" prisma db push --skip-generate && node scripts/push-turso-schema.mjs && next build",
+    "build": "DATABASE_URL=\"${DATABASE_URL:-file:./prisma/build.db}\" prisma generate && node scripts/init-build-db.mjs && node scripts/push-turso-schema.mjs && next build",
     "db:push:turso": "node scripts/push-turso-schema.mjs",
     "start": "next start",
     "lint": "eslint",

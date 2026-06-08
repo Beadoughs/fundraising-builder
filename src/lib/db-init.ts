@@ -18,6 +18,21 @@ const bundledDbCandidates = [
   "prisma/dev.db",
 ];
 
+const bundledSchemaCandidates = [
+  "prisma/build-schema.sql",
+  "prisma/prisma/build-schema.sql",
+];
+
+function getBundledSchemaSqlPath(): string | null {
+  for (const relativePath of bundledSchemaCandidates) {
+    const absolutePath = join(process.cwd(), relativePath);
+    if (existsSync(absolutePath)) {
+      return absolutePath;
+    }
+  }
+  return null;
+}
+
 function getBundledDatabasePath(): string | null {
   for (const relativePath of bundledDbCandidates) {
     const absolutePath = join(process.cwd(), relativePath);
@@ -32,6 +47,31 @@ function getRuntimeDatabasePath(): string | null {
   const url = ensureDatabaseUrl();
   if (!url.startsWith("file:")) return null;
   return url.replace(/^file:/, "");
+}
+
+function bootstrapRuntimeSchema(runtimePath: string): void {
+  const schemaPath = getBundledSchemaSqlPath();
+  if (!schemaPath) {
+    console.error(
+      "No bundled database or schema found — dashboard may fail until Turso is configured."
+    );
+    return;
+  }
+
+  try {
+    mkdirSync(dirname(runtimePath), { recursive: true });
+    const bootstrapScript = join(
+      process.cwd(),
+      "scripts",
+      "bootstrap-sqlite.mjs"
+    );
+    execSync(
+      `"${process.execPath}" "${bootstrapScript}" "${runtimePath}" "${schemaPath}"`,
+      { stdio: "pipe" }
+    );
+  } catch (error) {
+    console.error("Failed to bootstrap database schema:", error);
+  }
 }
 
 /** Apply the current Prisma schema to the SQLite file (adds missing tables/columns). */
@@ -58,23 +98,26 @@ export function ensureDatabaseReady(): void {
   const runtimePath = getRuntimeDatabasePath();
   if (!runtimePath) return;
 
-  if (isVercelSqlite()) {
-    if (!existsSync(runtimePath)) {
-      const bundledPath = getBundledDatabasePath();
-      if (bundledPath) {
-        try {
-          mkdirSync(dirname(runtimePath), { recursive: true });
-          copyFileSync(bundledPath, runtimePath);
-        } catch (error) {
-          console.error("Failed to copy bundled database:", error);
-        }
+  if (isVercelSqlite() && !existsSync(runtimePath)) {
+    const bundledPath = getBundledDatabasePath();
+    if (bundledPath) {
+      try {
+        mkdirSync(dirname(runtimePath), { recursive: true });
+        copyFileSync(bundledPath, runtimePath);
+      } catch (error) {
+        console.error("Failed to copy bundled database:", error);
+        bootstrapRuntimeSchema(runtimePath);
       }
+    } else {
+      bootstrapRuntimeSchema(runtimePath);
     }
   }
 
-  try {
-    syncSchema(runtimePath);
-  } catch (error) {
-    console.error("Failed to sync database schema:", error);
+  if (!process.env.VERCEL) {
+    try {
+      syncSchema(runtimePath);
+    } catch (error) {
+      console.error("Failed to sync database schema:", error);
+    }
   }
 }
