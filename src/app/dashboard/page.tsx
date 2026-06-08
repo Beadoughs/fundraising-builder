@@ -83,7 +83,7 @@ export default async function DashboardPage() {
             Launch your first fundraiser
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Pick a template and go live in under 5 minutes.
+            Set up your products and go live in under 5 minutes.
           </p>
           <Link
             href="/dashboard/campaigns/new"

@@ -23,7 +23,6 @@ export type CampaignDraft = {
   description: string;
   logoUrl: string;
   goalAmount: string;
-  templateId: string;
   leaderboardEnabled: boolean;
   products: ProductDraft[];
 };
@@ -52,7 +51,6 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       description: "",
       logoUrl: "",
       goalAmount: "",
-      templateId: "",
       leaderboardEnabled: true,
       products: [emptyProduct()],
     }
@@ -155,7 +153,6 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       description: form.description.trim() || null,
       logoUrl: form.logoUrl || null,
       goalAmount,
-      templateId: form.templateId || null,
       leaderboardEnabled: form.leaderboardEnabled,
       products,
     };
@@ -420,7 +417,6 @@ export function campaignToDraft(campaign: {
   description: string | null;
   logoUrl: string | null;
   goalAmount: number | null;
-  templateId?: string | null;
   leaderboardEnabled?: boolean;
   products: {
     name: string;
@@ -438,7 +434,6 @@ export function campaignToDraft(campaign: {
     goalAmount: campaign.goalAmount
       ? String(campaign.goalAmount / 100)
       : "",
-    templateId: campaign.templateId || "",
     leaderboardEnabled: campaign.leaderboardEnabled ?? true,
     products: campaign.products.length
       ? campaign.products.map((p) => ({
@@ -449,33 +444,5 @@ export function campaignToDraft(campaign: {
           quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
         }))
       : [emptyProduct()],
-  };
-}
-
-export function templateToDraft(template: {
-  id: string;
-  orgNamePlaceholder: string;
-  namePlaceholder: string;
-  descriptionPlaceholder: string;
-  goalAmount?: number;
-  products: { name: string; price: number; cost: number; quantityLimit?: number }[];
-}): CampaignDraft {
-  return {
-    name: template.namePlaceholder,
-    orgName: template.orgNamePlaceholder,
-    description: template.descriptionPlaceholder,
-    logoUrl: "",
-    goalAmount: template.goalAmount
-      ? String(template.goalAmount / 100)
-      : "",
-    templateId: template.id,
-    leaderboardEnabled: true,
-    products: template.products.map((p) => ({
-      name: p.name,
-      price: String(p.price / 100),
-      cost: String(p.cost / 100),
-      imageUrl: "",
-      quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
-    })),
   };
 }
