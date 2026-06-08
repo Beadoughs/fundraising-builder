@@ -103,7 +103,8 @@ export default async function DashboardPage() {
               (s, o) =>
                 s +
                 o.items.reduce(
-                  (si, i) => si + (i.price - i.cost) * i.quantity,
+                  (si, i) =>
+                    si + (i.price - (i.cost ?? 0)) * i.quantity,
                   0
                 ),
               0

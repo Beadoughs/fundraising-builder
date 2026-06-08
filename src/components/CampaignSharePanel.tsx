@@ -25,7 +25,7 @@ export function CampaignSharePanel({
       QRCode.toCanvas(canvasRef.current, url, {
         width: 200,
         margin: 2,
-        color: { dark: "#1a1a2e", light: "#ffffff" },
+        color: { dark: "#00337c", light: "#ffffff" },
       });
     }
   }, [slug]);

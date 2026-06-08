@@ -33,10 +33,7 @@ export function CampaignNav({
       <h2 className="mt-2 text-2xl font-bold text-gray-900">{campaignName}</h2>
       <nav className="mt-4 flex gap-1 overflow-x-auto border-b border-gray-100 pb-px">
         {items.map((tab) => {
-          const active =
-            pathname === tab.href ||
-            (tab.href.endsWith(`/${campaignId}`) &&
-              pathname === tab.href);
+          const active = pathname === tab.href;
           return (
             <Link
               key={tab.href}

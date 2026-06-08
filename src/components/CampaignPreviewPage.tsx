@@ -43,6 +43,7 @@ export function CampaignPreviewPage({
       if (!res.ok) throw new Error(data.error || "Failed to publish");
 
       setPublished(true);
+      router.push(`/dashboard/campaigns/${campaignId}/preview`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

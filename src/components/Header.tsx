@@ -1,19 +1,24 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function Header() {
   return (
-    <header className="border-b border-gray-100 bg-white">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-gray-900">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm text-white">
-            FR
-          </span>
-          FundraiseOS
+    <header className="border-b border-blue-100 bg-white">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <Image
+            src="/beadoughs-logo.png"
+            alt="Beadoughs"
+            width={140}
+            height={48}
+            className="h-10 w-auto"
+            priority
+          />
         </Link>
         <nav className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="text-sm font-medium text-gray-600 hover:text-gray-900"
+            className="text-sm font-medium text-gray-600 hover:text-brand"
           >
             Dashboard
           </Link>

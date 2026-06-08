@@ -117,7 +117,7 @@ export default async function ParticipantStorePage({
       </main>
 
       <footer className="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
-        Powered by Fundraising Builder · Secure payments by Stripe
+        Powered by Beadoughs · Secure payments by Stripe
       </footer>
     </div>
   );

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getParticipantStats } from "@/lib/fundraising-stats";
 import { goalProgressPercent, sumRevenue } from "@/lib/profit";
 import { SafeImage } from "@/components/SafeImage";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +23,36 @@ export default async function PublicCampaignPage({
   const { cancelled } = await searchParams;
 
   const campaign = await prisma.campaign.findUnique({
-    where: { slug, published: true },
+    where: { slug },
     include: {
       products: { orderBy: { sortOrder: "asc" } },
       orders: { where: { status: "paid" }, include: { items: true } },
     },
   });
 
-  if (!campaign) notFound();
+  if (!campaign || campaign.archived) notFound();
+
+  if (!campaign.published) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-md rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-xl font-bold text-gray-900">
+            This fundraiser isn&apos;t live yet
+          </h1>
+          <p className="mt-3 text-sm text-gray-600">
+            {campaign.name} hasn&apos;t been published. The organiser needs to
+            publish it from their dashboard before orders can be placed.
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-6 inline-block text-sm font-medium text-brand hover:underline"
+          >
+            Go to dashboard →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const allItems = campaign.orders.flatMap((o) => o.items);
   const totalRaised = sumRevenue(allItems);
@@ -104,7 +127,7 @@ export default async function PublicCampaignPage({
       </main>
 
       <footer className="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
-        Powered by Fundraising Builder · Secure payments by Stripe
+        Powered by Beadoughs · Secure payments by Stripe
       </footer>
     </div>
   );

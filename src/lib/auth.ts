@@ -11,7 +11,7 @@ function createEmailProvider(): Provider {
     name: "Email",
     from:
       process.env.EMAIL_FROM ||
-      "Fundraising Builder <onboarding@resend.dev>",
+      "Beadoughs <onboarding@resend.dev>",
     maxAge: 24 * 60 * 60,
     async sendVerificationRequest({ identifier: email, url }) {
       saveDevMagicLink(email, url);
@@ -29,14 +29,14 @@ function createEmailProvider(): Provider {
       await resend.emails.send({
         from:
           process.env.EMAIL_FROM ||
-          "Fundraising Builder <onboarding@resend.dev>",
+          "Beadoughs <onboarding@resend.dev>",
         to: email,
-        subject: "Sign in to Fundraising Builder",
+        subject: "Sign in to Beadoughs",
         html: `
           <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
-            <h2 style="color:#E8590C">Sign in to Fundraising Builder</h2>
+            <h2 style="color:#00337C">Sign in to Beadoughs</h2>
             <p>Click the button below to sign in. This link expires in 24 hours.</p>
-            <a href="${url}" style="display:inline-block;background:#E8590C;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0">Sign in</a>
+            <a href="${url}" style="display:inline-block;background:#00337C;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0">Sign in</a>
             <p style="color:#666;font-size:13px">If you didn't request this, you can ignore this email.</p>
           </div>
         `,

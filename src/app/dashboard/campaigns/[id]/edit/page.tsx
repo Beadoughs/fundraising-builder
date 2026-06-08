@@ -1,7 +1,5 @@
-import {
-  CampaignBuilder,
-  campaignToDraft,
-} from "@/components/CampaignBuilder";
+import { CampaignBuilder } from "@/components/CampaignBuilder";
+import { campaignToDraft } from "@/lib/campaign-draft";
 import { CampaignNav } from "@/components/dashboard/CampaignNav";
 import { getCampaignById } from "@/lib/campaigns";
 import { prisma } from "@/lib/db";

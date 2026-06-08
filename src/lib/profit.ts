@@ -9,7 +9,7 @@ export function lineRevenue(item: OrderItemLike): number {
 }
 
 export function lineCost(item: OrderItemLike): number {
-  return item.cost * item.quantity;
+  return (item.cost ?? 0) * item.quantity;
 }
 
 export function lineProfit(item: OrderItemLike): number {

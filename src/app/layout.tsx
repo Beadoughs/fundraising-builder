@@ -9,9 +9,12 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Fundraising Builder — Product fundraisers made simple",
+  title: "Beadoughs — Fundraising made simple",
   description:
-    "Create product-based fundraising campaigns in minutes. Perfect for schools, sports clubs, and community groups.",
+    "Run product-based fundraisers in minutes. Perfect for schools, sports clubs, and community groups.",
+  icons: {
+    icon: "/beadoughs-logo.png",
+  },
 };
 
 export default function RootLayout({

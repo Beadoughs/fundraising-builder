@@ -5,35 +5,16 @@ import { Card, FieldGroup, Label } from "@/components/ui/Form";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { ImageUpload } from "@/components/ImageUpload";
+import {
+  emptyProduct,
+  type CampaignDraft,
+  type ProductDraft,
+} from "@/lib/campaign-draft";
 import { formatCurrency } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export type ProductDraft = {
-  name: string;
-  price: string;
-  cost: string;
-  imageUrl: string;
-  quantityLimit: string;
-};
-
-export type CampaignDraft = {
-  name: string;
-  orgName: string;
-  description: string;
-  logoUrl: string;
-  goalAmount: string;
-  leaderboardEnabled: boolean;
-  products: ProductDraft[];
-};
-
-const emptyProduct = (): ProductDraft => ({
-  name: "",
-  price: "",
-  cost: "",
-  imageUrl: "",
-  quantityLimit: "",
-});
+export type { CampaignDraft, ProductDraft };
 
 type CampaignBuilderProps = {
   initial?: CampaignDraft & { id?: string; published?: boolean; slug?: string };
@@ -181,9 +162,9 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       if (!res.ok) throw new Error(data.error || "Failed to save");
 
       if (mode === "create") {
-        router.push(`/dashboard/campaigns/${data.id}`);
+        router.push(`/dashboard/campaigns/${data.id}/preview`);
       } else {
-        router.push(`/dashboard/campaigns/${initial!.id}`);
+        router.push(`/dashboard/campaigns/${initial!.id}/preview`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -409,40 +390,4 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       </div>
     </div>
   );
-}
-
-export function campaignToDraft(campaign: {
-  name: string;
-  orgName: string;
-  description: string | null;
-  logoUrl: string | null;
-  goalAmount: number | null;
-  leaderboardEnabled?: boolean;
-  products: {
-    name: string;
-    price: number;
-    cost?: number;
-    imageUrl: string | null;
-    quantityLimit: number | null;
-  }[];
-}): CampaignDraft {
-  return {
-    name: campaign.name,
-    orgName: campaign.orgName,
-    description: campaign.description || "",
-    logoUrl: campaign.logoUrl || "",
-    goalAmount: campaign.goalAmount
-      ? String(campaign.goalAmount / 100)
-      : "",
-    leaderboardEnabled: campaign.leaderboardEnabled ?? true,
-    products: campaign.products.length
-      ? campaign.products.map((p) => ({
-          name: p.name,
-          price: String(p.price / 100),
-          cost: p.cost ? String(p.cost / 100) : "",
-          imageUrl: p.imageUrl || "",
-          quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
-        }))
-      : [emptyProduct()],
-  };
 }

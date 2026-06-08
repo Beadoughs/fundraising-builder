@@ -30,7 +30,7 @@ export async function sendOrderReceipt(params: {
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#333">
-      <h1 style="color:#E8590C;font-size:24px">Thank you for your order!</h1>
+      <h1 style="color:#00337C;font-size:24px">Thank you for your order!</h1>
       <p>Hi ${customerName},</p>
       <p>Your order for <strong>${campaignName}</strong> (${orgName}) has been confirmed.</p>
       <p style="color:#666;font-size:14px">Order #${orderId.slice(-8).toUpperCase()}</p>
@@ -46,7 +46,7 @@ export async function sendOrderReceipt(params: {
         <tfoot>
           <tr>
             <td colspan="2" style="padding:12px 0;font-weight:bold">Total paid</td>
-            <td style="padding:12px 0;font-weight:bold;text-align:right;color:#E8590C">${formatCurrency(total)}</td>
+            <td style="padding:12px 0;font-weight:bold;text-align:right;color:#00337C">${formatCurrency(total)}</td>
           </tr>
         </tfoot>
       </table>
@@ -60,7 +60,7 @@ export async function sendOrderReceipt(params: {
   }
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || "Fundraising Builder <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM || "Beadoughs <onboarding@resend.dev>",
     to,
     subject: `Order confirmed — ${campaignName}`,
     html,
