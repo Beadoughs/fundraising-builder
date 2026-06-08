@@ -48,16 +48,18 @@ const PAID = { status: "paid" as const };
 export async function getCampaignStats(campaignId: string): Promise<CampaignStats | null> {
   ensureDatabaseReady();
 
-  const campaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
-    include: {
-      orders: {
-        where: PAID,
-        include: { items: true },
+  const [campaign, participantCount] = await Promise.all([
+    prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        orders: {
+          where: PAID,
+          include: { items: true },
+        },
       },
-      _count: { select: { participants: true } },
-    },
-  });
+    }),
+    prisma.participant.count({ where: { campaignId } }),
+  ]);
 
   if (!campaign) return null;
 
@@ -74,7 +76,7 @@ export async function getCampaignStats(campaignId: string): Promise<CampaignStat
     profit,
     cost: sumCost(items),
     orderCount: campaign.orders.length,
-    participantCount: campaign._count.participants,
+    participantCount,
     goalAmount: campaign.goalAmount,
     goalProgress: goalProgressPercent(revenue, campaign.goalAmount),
     published: campaign.published,
@@ -86,13 +88,17 @@ export async function getCampaignStats(campaignId: string): Promise<CampaignStat
 export async function getOrganisationStats(userId: string) {
   ensureDatabaseReady();
 
-  const campaigns = await prisma.campaign.findMany({
-    where: { userId, archived: false },
-    include: {
-      orders: { where: PAID, include: { items: true } },
-      _count: { select: { participants: true } },
-    },
-  });
+  const [campaigns, participantCount] = await Promise.all([
+    prisma.campaign.findMany({
+      where: { userId, archived: false },
+      include: {
+        orders: { where: PAID, include: { items: true } },
+      },
+    }),
+    prisma.participant.count({
+      where: { campaign: { userId, archived: false } },
+    }),
+  ]);
 
   const items = campaigns.flatMap((c) => c.orders.flatMap((o) => o.items));
   const revenue = sumRevenue(items);
@@ -103,7 +109,7 @@ export async function getOrganisationStats(userId: string) {
     profit,
     cost: sumCost(items),
     orderCount: campaigns.reduce((s, c) => s + c.orders.length, 0),
-    participantCount: campaigns.reduce((s, c) => s + c._count.participants, 0),
+    participantCount,
     campaignCount: campaigns.length,
     liveCount: campaigns.filter((c) => c.published).length,
   };

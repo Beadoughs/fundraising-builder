@@ -33,7 +33,8 @@ function getRuntimeDatabasePath(): string | null {
   return url.replace(/^file:/, "");
 }
 
-function initEmptyDatabase(runtimePath: string): void {
+/** Apply the current Prisma schema to the SQLite file (adds missing tables/columns). */
+function syncSchema(runtimePath: string): void {
   mkdirSync(dirname(runtimePath), { recursive: true });
   process.env.DATABASE_URL = `file:${runtimePath}`;
   execSync("npx prisma db push --skip-generate", {
@@ -42,28 +43,31 @@ function initEmptyDatabase(runtimePath: string): void {
   });
 }
 
-/** Prepare a writable SQLite database on Vercel before Prisma queries run. */
+/** Prepare a writable SQLite database before Prisma queries run. */
 export function ensureDatabaseReady(): void {
   if (initialized) return;
   initialized = true;
 
-  if (!isVercelSqlite()) return;
-
   const runtimePath = getRuntimeDatabasePath();
   if (!runtimePath) return;
 
-  if (existsSync(runtimePath)) return;
-
-  const bundledPath = getBundledDatabasePath();
-  if (bundledPath) {
-    try {
-      mkdirSync(dirname(runtimePath), { recursive: true });
-      copyFileSync(bundledPath, runtimePath);
-      return;
-    } catch (error) {
-      console.error("Failed to copy bundled database:", error);
+  if (isVercelSqlite()) {
+    if (!existsSync(runtimePath)) {
+      const bundledPath = getBundledDatabasePath();
+      if (bundledPath) {
+        try {
+          mkdirSync(dirname(runtimePath), { recursive: true });
+          copyFileSync(bundledPath, runtimePath);
+        } catch (error) {
+          console.error("Failed to copy bundled database:", error);
+        }
+      }
     }
   }
 
-  initEmptyDatabase(runtimePath);
+  try {
+    syncSchema(runtimePath);
+  } catch (error) {
+    console.error("Failed to sync database schema:", error);
+  }
 }
