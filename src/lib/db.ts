@@ -1,20 +1,16 @@
 import { ensureDatabaseReady } from "@/lib/db-init";
-import { ensureDatabaseUrl, isTursoDatabase } from "@/lib/env";
+import { canUseTurso, ensureDatabaseUrl } from "@/lib/env";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@prisma/client";
 
 ensureDatabaseUrl();
 
 function createPrismaClient(): PrismaClient {
-  if (isTursoDatabase()) {
-    const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL!;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-    if (!authToken) {
-      throw new Error(
-        "TURSO_AUTH_TOKEN is required when TURSO_DATABASE_URL is set"
-      );
-    }
-    const adapter = new PrismaLibSQL({ url, authToken });
+  if (canUseTurso()) {
+    const adapter = new PrismaLibSQL({
+      url: process.env.TURSO_DATABASE_URL!,
+      authToken: process.env.TURSO_AUTH_TOKEN!,
+    });
     return new PrismaClient({ adapter });
   }
 

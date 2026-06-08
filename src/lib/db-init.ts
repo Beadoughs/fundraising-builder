@@ -36,9 +36,13 @@ function getRuntimeDatabasePath(): string | null {
 
 /** Apply the current Prisma schema to the SQLite file (adds missing tables/columns). */
 function syncSchema(runtimePath: string): void {
+  // Build already runs db push; Vercel runtime has no npx/prisma CLI.
+  if (process.env.VERCEL) return;
+
   mkdirSync(dirname(runtimePath), { recursive: true });
   process.env.DATABASE_URL = `file:${runtimePath}`;
-  execSync("npx prisma db push --skip-generate", {
+  const prismaCli = join(process.cwd(), "node_modules", ".bin", "prisma");
+  execSync(`"${prismaCli}" db push --skip-generate`, {
     env: process.env,
     stdio: "pipe",
   });

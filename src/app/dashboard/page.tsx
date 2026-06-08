@@ -10,14 +10,13 @@ import Link from "next/link";
 
 const campaignInclude = {
   products: true,
-  _count: { select: { orders: true } },
+  _count: { select: { orders: true, participants: true } },
 };
 
 export default async function DashboardPage() {
   const userId = await getDefaultOrganiserId();
 
-  const [orgStats, activeCampaigns, archivedCampaigns, participantCounts] =
-    await Promise.all([
+  const [orgStats, activeCampaigns, archivedCampaigns] = await Promise.all([
     getOrganisationStats(userId),
     prisma.campaign.findMany({
       where: { userId, archived: false },
@@ -35,16 +34,7 @@ export default async function DashboardPage() {
       include: campaignInclude,
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.participant.groupBy({
-      by: ["campaignId"],
-      where: { campaign: { userId, archived: false } },
-      _count: { _all: true },
-    }),
   ]);
-
-  const sellersByCampaign = new Map(
-    participantCounts.map((row) => [row.campaignId, row._count._all])
-  );
 
   return (
     <div>
@@ -172,7 +162,7 @@ export default async function DashboardPage() {
                       <div>
                         <p className="text-gray-400">Sellers</p>
                         <p className="font-semibold">
-                          {sellersByCampaign.get(campaign.id) ?? 0}
+                          {campaign._count.participants}
                         </p>
                       </div>
                     </div>
