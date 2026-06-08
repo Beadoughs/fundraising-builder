@@ -1,20 +1,19 @@
-import {
-  CampaignBuilder,
-  campaignToDraft,
-} from "@/components/CampaignBuilder";
 import { CampaignManageActions } from "@/components/CampaignManageActions";
 import { Card } from "@/components/ui/Form";
-import { getDefaultOrganiserId } from "@/lib/organiser";
+import { getCampaignById } from "@/lib/campaigns";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CampaignDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const userId = await getDefaultOrganiserId();
+
+  if (!(await getCampaignById(id))) notFound();
 
   const campaign = await prisma.campaign.findUnique({
     where: { id },
@@ -26,10 +25,7 @@ export default async function CampaignDetailPage({ params }: PageProps) {
       },
     },
   });
-
-  if (!campaign || campaign.userId !== userId) {
-    notFound();
-  }
+  if (!campaign) notFound();
 
   const paidOrders = campaign.orders.filter((o) => o.status === "paid");
   const totalRaised = paidOrders.reduce((sum, o) => sum + o.total, 0);
@@ -112,10 +108,10 @@ export default async function CampaignDetailPage({ params }: PageProps) {
           <h3 className="mb-4 font-semibold text-gray-900">Quick actions</h3>
           <div className="space-y-2">
             <Link
-              href={`/dashboard/campaigns/${campaign.id}#edit`}
-              className="block rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              href={`/dashboard/campaigns/${campaign.id}/edit`}
+              className="block rounded-lg border border-brand bg-brand/5 px-4 py-2.5 text-sm font-semibold text-brand hover:bg-brand/10"
             >
-              Edit products & details →
+              Edit fundraiser →
             </Link>
             <Link
               href={`/dashboard/campaigns/${campaign.id}/preview`}
@@ -147,21 +143,6 @@ export default async function CampaignDetailPage({ params }: PageProps) {
           campaignId={campaign.id}
           campaignName={campaign.name}
           archived={campaign.archived}
-        />
-      </div>
-
-      <div id="edit" className="mb-12 scroll-mt-8">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">
-          Edit campaign
-        </h3>
-        <CampaignBuilder
-          mode="edit"
-          initial={{
-            id: campaign.id,
-            slug: campaign.slug,
-            published: campaign.published,
-            ...campaignToDraft(campaign),
-          }}
         />
       </div>
 

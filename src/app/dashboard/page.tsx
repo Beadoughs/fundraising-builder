@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                         Share
                       </Link>
                       <Link
-                        href={`/dashboard/campaigns/${campaign.id}`}
+                        href={`/dashboard/campaigns/${campaign.id}/edit`}
                         className="font-medium text-brand hover:underline"
                       >
                         Edit

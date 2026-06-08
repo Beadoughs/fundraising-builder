@@ -1,4 +1,4 @@
-import { getDefaultOrganiserId } from "@/lib/organiser";
+import { getCampaignById } from "@/lib/campaigns";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import { NextResponse } from "next/server";
@@ -6,11 +6,14 @@ import { NextResponse } from "next/server";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const userId = await getDefaultOrganiserId();
-
   const { id } = await context.params;
 
-  const campaign = await prisma.campaign.findUnique({
+  const campaign = await getCampaignById(id);
+  if (!campaign) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const full = await prisma.campaign.findUnique({
     where: { id },
     include: {
       orders: {
@@ -20,8 +23,7 @@ export async function GET(_request: Request, context: RouteContext) {
       },
     },
   });
-
-  if (!campaign || campaign.userId !== userId) {
+  if (!full) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -39,7 +41,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const rows: string[][] = [];
 
-  for (const order of campaign.orders) {
+  for (const order of full.orders) {
     for (let i = 0; i < order.items.length; i++) {
       const item = order.items[i];
       rows.push([
@@ -65,7 +67,7 @@ export async function GET(_request: Request, context: RouteContext) {
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="${campaign.slug}-orders.csv"`,
+      "Content-Disposition": `attachment; filename="${full.slug}-orders.csv"`,
     },
   });
 }

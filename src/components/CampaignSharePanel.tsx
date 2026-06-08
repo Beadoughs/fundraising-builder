@@ -83,7 +83,7 @@ export function CampaignSharePanel({
             Open live page →
           </Link>
           <Link
-            href={`/dashboard/campaigns/${campaignId}`}
+            href={`/dashboard/campaigns/${campaignId}/edit`}
             className="mt-2 block text-sm font-medium text-gray-600 hover:text-brand"
           >
             Edit fundraiser →

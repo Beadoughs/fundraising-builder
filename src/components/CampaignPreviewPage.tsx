@@ -92,7 +92,7 @@ export function CampaignPreviewPage({
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
-          href={`/dashboard/campaigns/${campaignId}`}
+          href={`/dashboard/campaigns/${campaignId}/edit`}
           className="inline-flex flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
         >
           Edit fundraiser

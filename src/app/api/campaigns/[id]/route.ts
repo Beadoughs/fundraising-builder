@@ -1,4 +1,3 @@
-import { getDefaultOrganiserId } from "@/lib/organiser";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -26,17 +25,16 @@ const updateSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function getOwnedCampaign(id: string, userId: string) {
-  const campaign = await prisma.campaign.findUnique({ where: { id } });
-  if (!campaign || campaign.userId !== userId) return null;
-  return campaign;
+async function getCampaign(id: string) {
+  ensureDatabaseReady();
+  return prisma.campaign.findUnique({ where: { id } });
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const userId = await getDefaultOrganiserId();
+  ensureDatabaseReady();
 
   const { id } = await context.params;
-  const owned = await getOwnedCampaign(id, userId);
+  const owned = await getCampaign(id);
   if (!owned) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -69,10 +67,9 @@ export async function GET(_request: Request, context: RouteContext) {
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     ensureDatabaseReady();
-    const userId = await getDefaultOrganiserId();
 
     const { id } = await context.params;
-    const existing = await getOwnedCampaign(id, userId);
+    const existing = await getCampaign(id);
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -138,10 +135,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const userId = await getDefaultOrganiserId();
+  ensureDatabaseReady();
 
   const { id } = await context.params;
-  const existing = await getOwnedCampaign(id, userId);
+  const existing = await getCampaign(id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

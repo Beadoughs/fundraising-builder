@@ -1,43 +1,44 @@
 import { CampaignPreviewPage } from "@/components/CampaignPreviewPage";
-import { getDefaultOrganiserId } from "@/lib/organiser";
+import { getCampaignById } from "@/lib/campaigns";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CampaignPreviewRoute({ params }: PageProps) {
   const { id } = await params;
-  const userId = await getDefaultOrganiserId();
 
-  const campaign = await prisma.campaign.findUnique({
+  const campaign = await getCampaignById(id);
+  if (!campaign) notFound();
+
+  const full = await prisma.campaign.findUnique({
     where: { id },
     include: {
       products: { orderBy: { sortOrder: "asc" } },
       orders: { where: { status: "paid" }, select: { total: true } },
     },
   });
+  if (!full) notFound();
 
-  if (!campaign || campaign.userId !== userId) {
-    notFound();
-  }
-
-  const totalRaised = campaign.orders.reduce((sum, o) => sum + o.total, 0);
+  const totalRaised = full.orders.reduce((sum, o) => sum + o.total, 0);
 
   return (
     <CampaignPreviewPage
-      campaignId={campaign.id}
-      slug={campaign.slug}
-      published={campaign.published}
-      archived={campaign.archived}
-      campaignName={campaign.name}
+      campaignId={full.id}
+      slug={full.slug}
+      published={full.published}
+      archived={full.archived}
+      campaignName={full.name}
       preview={{
-        name: campaign.name,
-        orgName: campaign.orgName,
-        description: campaign.description,
-        logoUrl: campaign.logoUrl,
-        goalAmount: campaign.goalAmount,
+        name: full.name,
+        orgName: full.orgName,
+        description: full.description,
+        logoUrl: full.logoUrl,
+        goalAmount: full.goalAmount,
         totalRaised,
-        products: campaign.products.map((p) => ({
+        products: full.products.map((p) => ({
           id: p.id,
           name: p.name,
           price: p.price,
