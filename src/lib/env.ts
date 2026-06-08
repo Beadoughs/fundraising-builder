@@ -35,11 +35,14 @@ export function ensureDatabaseUrl(): string {
     return (process.env.DATABASE_URL ??= process.env.TURSO_DATABASE_URL!);
   }
 
+  // Vercel's project root is read-only — always use /tmp for file SQLite.
+  if (process.env.VERCEL) {
+    return (process.env.DATABASE_URL = VERCEL_DATABASE_URL);
+  }
+
   const url = process.env.DATABASE_URL ?? "";
   if (!url || url.startsWith("libsql:")) {
-    return (process.env.DATABASE_URL = process.env.VERCEL
-      ? VERCEL_DATABASE_URL
-      : DEFAULT_DATABASE_URL);
+    return (process.env.DATABASE_URL = DEFAULT_DATABASE_URL);
   }
   return url;
 }
@@ -50,11 +53,7 @@ export function isTursoDatabase(): boolean {
 }
 
 export function isVercelSqlite(): boolean {
-  return (
-    Boolean(process.env.VERCEL) &&
-    !isTursoDatabase() &&
-    ensureDatabaseUrl().startsWith("file:/tmp/")
-  );
+  return Boolean(process.env.VERCEL) && !isTursoDatabase();
 }
 
 /** Ephemeral /tmp SQLite on Vercel — data is lost across serverless instances. */

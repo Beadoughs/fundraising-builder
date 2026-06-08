@@ -1,5 +1,5 @@
 import { execSync } from "child_process";
-import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, statSync } from "fs";
 import { dirname, join } from "path";
 import {
   BUNDLED_DATABASE_PATH,
@@ -14,8 +14,6 @@ const bundledDbCandidates = [
   BUNDLED_DATABASE_PATH,
   "prisma/build.db",
   "prisma/prisma/build.db",
-  "dev.db",
-  "prisma/dev.db",
 ];
 
 const bundledSchemaCandidates = [
@@ -36,7 +34,7 @@ function getBundledSchemaSqlPath(): string | null {
 function getBundledDatabasePath(): string | null {
   for (const relativePath of bundledDbCandidates) {
     const absolutePath = join(process.cwd(), relativePath);
-    if (existsSync(absolutePath)) {
+    if (existsSync(absolutePath) && statSync(absolutePath).size > 0) {
       return absolutePath;
     }
   }
@@ -60,14 +58,10 @@ function bootstrapRuntimeSchema(runtimePath: string): void {
 
   try {
     mkdirSync(dirname(runtimePath), { recursive: true });
-    const bootstrapScript = join(
-      process.cwd(),
-      "scripts",
-      "bootstrap-sqlite.mjs"
-    );
+    // Run bootstrap in a child process so async libsql calls complete before queries.
     execSync(
-      `"${process.execPath}" "${bootstrapScript}" "${runtimePath}" "${schemaPath}"`,
-      { stdio: "pipe" }
+      `"${process.execPath}" "${join(process.cwd(), "scripts", "bootstrap-sqlite.mjs")}" "${runtimePath}" "${schemaPath}"`,
+      { stdio: "pipe", cwd: process.cwd() }
     );
   } catch (error) {
     console.error("Failed to bootstrap database schema:", error);
