@@ -4,6 +4,8 @@ import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ cancelled?: string }>;

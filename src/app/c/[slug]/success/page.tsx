@@ -3,6 +3,8 @@ import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ order?: string }>;
