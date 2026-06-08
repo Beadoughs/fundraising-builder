@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getDefaultOrganiserId } from "@/lib/organiser";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -19,6 +19,7 @@ const updateSchema = z.object({
   logoUrl: z.string().optional().nullable(),
   goalAmount: z.number().int().positive().optional().nullable(),
   published: z.boolean().optional(),
+  archived: z.boolean().optional(),
   products: z.array(productSchema).optional(),
 });
 
@@ -31,13 +32,10 @@ async function getOwnedCampaign(id: string, userId: string) {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   const { id } = await context.params;
-  const owned = await getOwnedCampaign(id, session.user.id);
+  const owned = await getOwnedCampaign(id, userId);
   if (!owned) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -68,13 +66,10 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   const { id } = await context.params;
-  const existing = await getOwnedCampaign(id, session.user.id);
+  const existing = await getOwnedCampaign(id, userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -97,16 +92,31 @@ export async function PATCH(request: Request, context: RouteContext) {
       });
     }
 
+    const updateData: {
+      name?: string;
+      orgName?: string;
+      description?: string | null;
+      logoUrl?: string | null;
+      goalAmount?: number | null;
+      published?: boolean;
+      archived?: boolean;
+    } = {
+      name: data.name,
+      orgName: data.orgName,
+      description: data.description,
+      logoUrl: data.logoUrl,
+      goalAmount: data.goalAmount,
+      published: data.published,
+      archived: data.archived,
+    };
+
+    if (data.archived === true) {
+      updateData.published = false;
+    }
+
     const campaign = await prisma.campaign.update({
       where: { id },
-      data: {
-        name: data.name,
-        orgName: data.orgName,
-        description: data.description,
-        logoUrl: data.logoUrl,
-        goalAmount: data.goalAmount,
-        published: data.published,
-      },
+      data: updateData,
       include: { products: { orderBy: { sortOrder: "asc" } } },
     });
 
@@ -127,13 +137,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   const { id } = await context.params;
-  const existing = await getOwnedCampaign(id, session.user.id);
+  const existing = await getOwnedCampaign(id, userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

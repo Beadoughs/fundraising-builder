@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getDefaultOrganiserId } from "@/lib/organiser";
 import { prisma } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { nanoid } from "nanoid";
@@ -34,13 +34,10 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   const campaigns = await prisma.campaign.findMany({
-    where: { userId: session.user.id },
+    where: { userId, archived: false },
     include: {
       products: { orderBy: { sortOrder: "asc" } },
       orders: { where: { status: "paid" }, select: { total: true } },
@@ -61,10 +58,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   try {
     const body = await request.json();
@@ -80,7 +74,7 @@ export async function POST(request: Request) {
         goalAmount: data.goalAmount,
         published: data.published ?? false,
         slug,
-        userId: session.user.id,
+        userId,
         products: data.products?.length
           ? {
               create: data.products.map((p, i) => ({

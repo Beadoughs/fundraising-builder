@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { CampaignManageActions } from "@/components/CampaignManageActions";
 import { CampaignPreview, type PreviewCampaign } from "@/components/CampaignPreview";
 import { CampaignSharePanel } from "@/components/CampaignSharePanel";
 import Link from "next/link";
@@ -11,11 +12,15 @@ export function CampaignPreviewPage({
   campaignId,
   slug,
   published: initialPublished,
+  archived = false,
+  campaignName,
   preview,
 }: {
   campaignId: string;
   slug: string;
   published: boolean;
+  archived?: boolean;
+  campaignName: string;
   preview: PreviewCampaign;
 }) {
   const router = useRouter();
@@ -106,6 +111,14 @@ export function CampaignPreviewPage({
             Back to dashboard
           </Link>
         )}
+      </div>
+
+      <div className="mt-10 border-t border-gray-100 pt-10">
+        <CampaignManageActions
+          campaignId={campaignId}
+          campaignName={campaignName}
+          archived={archived}
+        />
       </div>
     </div>
   );

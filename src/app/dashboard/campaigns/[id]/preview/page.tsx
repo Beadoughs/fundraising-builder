@@ -1,5 +1,5 @@
 import { CampaignPreviewPage } from "@/components/CampaignPreviewPage";
-import { auth } from "@/lib/auth";
+import { getDefaultOrganiserId } from "@/lib/organiser";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 
@@ -7,7 +7,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CampaignPreviewRoute({ params }: PageProps) {
   const { id } = await params;
-  const session = await auth();
+  const userId = await getDefaultOrganiserId();
 
   const campaign = await prisma.campaign.findUnique({
     where: { id },
@@ -17,7 +17,7 @@ export default async function CampaignPreviewRoute({ params }: PageProps) {
     },
   });
 
-  if (!campaign || campaign.userId !== session!.user!.id) {
+  if (!campaign || campaign.userId !== userId) {
     notFound();
   }
 
@@ -28,6 +28,8 @@ export default async function CampaignPreviewRoute({ params }: PageProps) {
       campaignId={campaign.id}
       slug={campaign.slug}
       published={campaign.published}
+      archived={campaign.archived}
+      campaignName={campaign.name}
       preview={{
         name: campaign.name,
         orgName: campaign.orgName,

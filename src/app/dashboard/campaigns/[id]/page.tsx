@@ -2,8 +2,9 @@ import {
   CampaignBuilder,
   campaignToDraft,
 } from "@/components/CampaignBuilder";
+import { CampaignManageActions } from "@/components/CampaignManageActions";
 import { Card } from "@/components/ui/Form";
-import { auth } from "@/lib/auth";
+import { getDefaultOrganiserId } from "@/lib/organiser";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
@@ -13,7 +14,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CampaignDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const session = await auth();
+  const userId = await getDefaultOrganiserId();
 
   const campaign = await prisma.campaign.findUnique({
     where: { id },
@@ -26,7 +27,7 @@ export default async function CampaignDetailPage({ params }: PageProps) {
     },
   });
 
-  if (!campaign || campaign.userId !== session!.user!.id) {
+  if (!campaign || campaign.userId !== userId) {
     notFound();
   }
 
@@ -46,15 +47,21 @@ export default async function CampaignDetailPage({ params }: PageProps) {
                 <h2 className="text-xl font-bold text-gray-900">
                   {campaign.name}
                 </h2>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    campaign.published
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {campaign.published ? "Live" : "Draft"}
-                </span>
+                {campaign.archived ? (
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    Archived
+                  </span>
+                ) : (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      campaign.published
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {campaign.published ? "Live" : "Draft"}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-gray-500">{campaign.orgName}</p>
             </div>
@@ -127,6 +134,14 @@ export default async function CampaignDetailPage({ params }: PageProps) {
             </a>
           </div>
         </Card>
+      </div>
+
+      <div className="mb-12">
+        <CampaignManageActions
+          campaignId={campaign.id}
+          campaignName={campaign.name}
+          archived={campaign.archived}
+        />
       </div>
 
       <div className="mb-12">

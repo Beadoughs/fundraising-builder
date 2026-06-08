@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getDefaultOrganiserId } from "@/lib/organiser";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import { NextResponse } from "next/server";
@@ -6,10 +6,7 @@ import { NextResponse } from "next/server";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await getDefaultOrganiserId();
 
   const { id } = await context.params;
 
@@ -24,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
     },
   });
 
-  if (!campaign || campaign.userId !== session.user.id) {
+  if (!campaign || campaign.userId !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

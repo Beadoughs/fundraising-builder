@@ -21,14 +21,18 @@ function LoginForm() {
     setError("");
 
     try {
-      const result = await signIn("resend", {
+      const result = await signIn("email", {
         email,
         redirect: false,
         callbackUrl,
       });
 
       if (result?.error) {
-        setError("Could not send login link. Please try again.");
+        setError(
+          result.error === "Configuration"
+            ? "Sign-in is not set up on this server. If you are the organiser, check AUTH_SECRET is set and restart the app."
+            : "Could not send login link. Please try again."
+        );
       } else if (result?.ok) {
         window.location.href = `/login/verify?email=${encodeURIComponent(email)}`;
       } else {

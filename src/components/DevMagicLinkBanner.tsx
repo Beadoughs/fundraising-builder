@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 export function DevMagicLinkBanner({ email }: { email: string }) {
@@ -60,15 +60,14 @@ export function DevMagicLinkBanner({ email }: { email: string }) {
       <p className="mt-1 text-xs text-amber-800">
         No email was sent. Use the button below (valid for 24 hours).
       </p>
-      <Button
-        className="mt-4 w-full"
-        size="lg"
-        onClick={() => {
-          window.location.href = url;
-        }}
+      <a
+        href={url}
+        className={cn(
+          "mt-4 inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-brand-dark"
+        )}
       >
         Sign in now
-      </Button>
+      </a>
       <p className="mt-3 break-all text-xs text-amber-700">{url}</p>
     </div>
   );
