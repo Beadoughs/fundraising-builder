@@ -4,6 +4,7 @@ import { dirname, join } from "path";
 import {
   BUNDLED_DATABASE_PATH,
   ensureDatabaseUrl,
+  isTursoDatabase,
   isVercelSqlite,
 } from "@/lib/env";
 
@@ -47,6 +48,8 @@ function syncSchema(runtimePath: string): void {
 export function ensureDatabaseReady(): void {
   if (initialized) return;
   initialized = true;
+
+  if (isTursoDatabase()) return;
 
   const runtimePath = getRuntimeDatabasePath();
   if (!runtimePath) return;

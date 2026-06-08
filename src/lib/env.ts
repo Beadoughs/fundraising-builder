@@ -8,6 +8,9 @@ export const VERCEL_DATABASE_URL = "file:/tmp/fundraising.db";
 export const BUNDLED_DATABASE_PATH = "prisma/build.db";
 
 export function ensureDatabaseUrl(): string {
+  if (!process.env.DATABASE_URL && process.env.TURSO_DATABASE_URL) {
+    process.env.DATABASE_URL = process.env.TURSO_DATABASE_URL;
+  }
   if (!process.env.DATABASE_URL) {
     process.env.DATABASE_URL = process.env.VERCEL
       ? VERCEL_DATABASE_URL
@@ -16,9 +19,21 @@ export function ensureDatabaseUrl(): string {
   return process.env.DATABASE_URL;
 }
 
+/** True when using Turso/libSQL (persistent SQLite on Vercel). */
+export function isTursoDatabase(): boolean {
+  const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? "";
+  return url.startsWith("libsql:");
+}
+
 export function isVercelSqlite(): boolean {
   return (
     Boolean(process.env.VERCEL) &&
-    (process.env.DATABASE_URL ?? VERCEL_DATABASE_URL).startsWith("file:/tmp/")
+    !isTursoDatabase() &&
+    ensureDatabaseUrl().startsWith("file:/tmp/")
   );
+}
+
+/** Ephemeral /tmp SQLite on Vercel — data is lost across serverless instances. */
+export function isEphemeralVercelSqlite(): boolean {
+  return isVercelSqlite();
 }

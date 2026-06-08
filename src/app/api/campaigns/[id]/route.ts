@@ -1,5 +1,6 @@
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
+import { isEphemeralVercelSqlite } from "@/lib/env";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -39,7 +40,14 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   const owned = await getCampaign(id);
   if (!owned) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: isEphemeralVercelSqlite()
+          ? "Campaign not found — data is not persisted across Vercel instances. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for a shared database."
+          : "Not found",
+      },
+      { status: 404 }
+    );
   }
 
   const campaign = await prisma.campaign.findUnique({
@@ -74,7 +82,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const existing = await getCampaign(id);
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: isEphemeralVercelSqlite()
+            ? "Campaign not found — data is not persisted across Vercel instances. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for a shared database."
+            : "Not found",
+        },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();

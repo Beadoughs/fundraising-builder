@@ -86,7 +86,28 @@ src/
 
 ## Production notes
 
-- Switch `DATABASE_URL` to PostgreSQL
+### Database on Vercel
+
+Vercel serverless functions use ephemeral `/tmp` storage. Without a remote database, campaigns created on one instance are invisible to the next — publish, navigation, and dashboard tabs return "not found".
+
+**Use [Turso](https://turso.tech)** (SQLite-compatible, free tier):
+
+```bash
+# Install Turso CLI, create a database, then:
+turso db tokens create <db-name>
+```
+
+Set these on Vercel (and locally for testing):
+
+| Variable | Description |
+|----------|-------------|
+| `TURSO_DATABASE_URL` | e.g. `libsql://your-db-org.turso.io` |
+| `TURSO_AUTH_TOKEN` | Token from `turso db tokens create` |
+
+Schema is applied automatically during `npm run build` when both vars are set. To sync manually: `npm run db:push:turso`.
+
+### Other production setup
+
 - Set real `AUTH_SECRET`, Stripe keys, and `RESEND_API_KEY`
 - Configure file storage (S3/Cloudinary) instead of local `public/uploads/`
 - Deploy to Vercel, Railway, or similar
