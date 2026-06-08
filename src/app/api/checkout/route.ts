@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const checkoutSchema = z.object({
   campaignSlug: z.string(),
+  participantSlug: z.string().optional(),
   customerName: z.string().min(1),
   customerEmail: z.string().email(),
   items: z
@@ -38,10 +39,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
+    let participantId: string | undefined;
+    if (data.participantSlug) {
+      const participant = await prisma.participant.findFirst({
+        where: { campaignId: campaign.id, slug: data.participantSlug },
+      });
+      if (participant) participantId = participant.id;
+    }
+
     const lineItems: {
       productId: string;
       name: string;
       price: number;
+      cost: number;
       quantity: number;
     }[] = [];
     let total = 0;
@@ -76,6 +86,7 @@ export async function POST(request: Request) {
         productId: product.id,
         name: product.name,
         price: product.price,
+        cost: product.cost,
         quantity: item.quantity,
       });
       total += product.price * item.quantity;
@@ -84,6 +95,7 @@ export async function POST(request: Request) {
     const order = await prisma.order.create({
       data: {
         campaignId: campaign.id,
+        participantId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         total,
@@ -93,6 +105,7 @@ export async function POST(request: Request) {
             productId: item.productId,
             name: item.name,
             price: item.price,
+            cost: item.cost,
             quantity: item.quantity,
           })),
         },

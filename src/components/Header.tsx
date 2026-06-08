@@ -6,9 +6,9 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-gray-900">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm text-white">
-            FB
+            FR
           </span>
-          Fundraising Builder
+          FundraiseOS
         </Link>
         <nav className="flex items-center gap-3">
           <Link

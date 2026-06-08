@@ -12,6 +12,7 @@ import { useState } from "react";
 export type ProductDraft = {
   name: string;
   price: string;
+  cost: string;
   imageUrl: string;
   quantityLimit: string;
 };
@@ -22,12 +23,15 @@ export type CampaignDraft = {
   description: string;
   logoUrl: string;
   goalAmount: string;
+  templateId: string;
+  leaderboardEnabled: boolean;
   products: ProductDraft[];
 };
 
 const emptyProduct = (): ProductDraft => ({
   name: "",
   price: "",
+  cost: "",
   imageUrl: "",
   quantityLimit: "",
 });
@@ -48,6 +52,8 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       description: "",
       logoUrl: "",
       goalAmount: "",
+      templateId: "",
+      leaderboardEnabled: true,
       products: [emptyProduct()],
     }
   );
@@ -100,6 +106,17 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
         if (!Number.isFinite(priceCents) || priceCents <= 0) {
           throw new Error(`Enter a valid price for "${p.name.trim()}"`);
         }
+        const costCents = p.cost.trim()
+          ? Math.round(parseFloat(p.cost) * 100)
+          : 0;
+        if (!Number.isFinite(costCents) || costCents < 0) {
+          throw new Error(`Enter a valid cost for "${p.name.trim()}"`);
+        }
+        if (costCents >= priceCents) {
+          throw new Error(
+            `Cost must be less than price for "${p.name.trim()}"`
+          );
+        }
         const quantityLimit = p.quantityLimit.trim()
           ? parseInt(p.quantityLimit, 10)
           : null;
@@ -112,6 +129,7 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
         return {
           name: p.name.trim(),
           price: priceCents,
+          cost: costCents,
           imageUrl: p.imageUrl || null,
           quantityLimit,
           sortOrder: i,
@@ -137,6 +155,8 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       description: form.description.trim() || null,
       logoUrl: form.logoUrl || null,
       goalAmount,
+      templateId: form.templateId || null,
+      leaderboardEnabled: form.leaderboardEnabled,
       products,
     };
   }
@@ -164,9 +184,9 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       if (!res.ok) throw new Error(data.error || "Failed to save");
 
       if (mode === "create") {
-        router.push(`/dashboard/campaigns/${data.id}/preview`);
+        router.push(`/dashboard/campaigns/${data.id}`);
       } else {
-        router.push(`/dashboard/campaigns/${initial!.id}/preview`);
+        router.push(`/dashboard/campaigns/${initial!.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -175,18 +195,25 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
     }
   }
 
+  const estimatedProfitPerUnit = form.products.map((p) => {
+    const price = parseFloat(p.price);
+    const cost = parseFloat(p.cost || "0");
+    if (!Number.isFinite(price) || !Number.isFinite(cost)) return null;
+    return price - cost;
+  });
+
   return (
     <div className="mx-auto max-w-2xl">
       <Card className="mb-6">
         <h2 className="mb-1 text-lg font-semibold text-gray-900">
-          Campaign details
+          Fundraiser details
         </h2>
         <p className="mb-6 text-sm text-gray-500">
-          Basic info buyers will see on your public page.
+          Basic info supporters will see on your public page.
         </p>
 
         <FieldGroup>
-          <Label htmlFor="name">Campaign name</Label>
+          <Label htmlFor="name">Fundraiser name</Label>
           <Input
             id="name"
             placeholder="e.g. Year 6 Doughnut Drive"
@@ -239,6 +266,22 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
             />
           </div>
         </FieldGroup>
+
+        <FieldGroup className="mb-0">
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={form.leaderboardEnabled}
+              onChange={(e) =>
+                updateField("leaderboardEnabled", e.target.checked)
+              }
+              className="h-4 w-4 rounded border-gray-300 text-brand"
+            />
+            <span className="text-sm text-gray-700">
+              Enable seller leaderboard (boosts competition & sales)
+            </span>
+          </label>
+        </FieldGroup>
       </Card>
 
       <Card className="mb-6">
@@ -246,7 +289,7 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Products</h2>
             <p className="text-sm text-gray-500">
-              What are you selling to raise funds?
+              Set selling price and cost — profit is calculated automatically.
             </p>
           </div>
           <Button type="button" variant="secondary" size="sm" onClick={addProduct}>
@@ -263,6 +306,15 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">
                   Product {index + 1}
+                  {estimatedProfitPerUnit[index] !== null &&
+                    estimatedProfitPerUnit[index]! > 0 && (
+                      <span className="ml-2 text-emerald-600">
+                        {formatCurrency(
+                          Math.round(estimatedProfitPerUnit[index]! * 100)
+                        )}{" "}
+                        profit/unit
+                      </span>
+                    )}
                 </span>
                 {form.products.length > 1 && (
                   <button
@@ -286,9 +338,9 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
                 />
               </FieldGroup>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <FieldGroup className="mb-0">
-                  <Label>Price ($)</Label>
+                  <Label>Sell price ($)</Label>
                   <Input
                     type="number"
                     min="0"
@@ -301,7 +353,20 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
                   />
                 </FieldGroup>
                 <FieldGroup className="mb-0">
-                  <Label>Stock limit (optional)</Label>
+                  <Label>Your cost ($)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="6.00"
+                    value={product.cost}
+                    onChange={(e) =>
+                      updateProduct(index, { cost: e.target.value })
+                    }
+                  />
+                </FieldGroup>
+                <FieldGroup className="mb-0">
+                  <Label>Stock limit</Label>
                   <Input
                     type="number"
                     min="1"
@@ -331,27 +396,19 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        {mode === "create" ? (
-          <Button
-            type="button"
-            disabled={saving}
-            onClick={() => save()}
-            className="flex-1"
-            size="lg"
-          >
-            {saving ? "Saving…" : "Continue to preview"}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            disabled={saving}
-            onClick={() => save()}
-            className="flex-1"
-            size="lg"
-          >
-            {saving ? "Saving…" : "Save & preview"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          disabled={saving}
+          onClick={() => save()}
+          className="flex-1"
+          size="lg"
+        >
+          {saving
+            ? "Saving…"
+            : mode === "create"
+              ? "Launch fundraiser"
+              : "Save changes"}
+        </Button>
       </div>
     </div>
   );
@@ -363,9 +420,12 @@ export function campaignToDraft(campaign: {
   description: string | null;
   logoUrl: string | null;
   goalAmount: number | null;
+  templateId?: string | null;
+  leaderboardEnabled?: boolean;
   products: {
     name: string;
     price: number;
+    cost?: number;
     imageUrl: string | null;
     quantityLimit: number | null;
   }[];
@@ -378,13 +438,44 @@ export function campaignToDraft(campaign: {
     goalAmount: campaign.goalAmount
       ? String(campaign.goalAmount / 100)
       : "",
+    templateId: campaign.templateId || "",
+    leaderboardEnabled: campaign.leaderboardEnabled ?? true,
     products: campaign.products.length
       ? campaign.products.map((p) => ({
           name: p.name,
           price: String(p.price / 100),
+          cost: p.cost ? String(p.cost / 100) : "",
           imageUrl: p.imageUrl || "",
           quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
         }))
       : [emptyProduct()],
+  };
+}
+
+export function templateToDraft(template: {
+  id: string;
+  orgNamePlaceholder: string;
+  namePlaceholder: string;
+  descriptionPlaceholder: string;
+  goalAmount?: number;
+  products: { name: string; price: number; cost: number; quantityLimit?: number }[];
+}): CampaignDraft {
+  return {
+    name: template.namePlaceholder,
+    orgName: template.orgNamePlaceholder,
+    description: template.descriptionPlaceholder,
+    logoUrl: "",
+    goalAmount: template.goalAmount
+      ? String(template.goalAmount / 100)
+      : "",
+    templateId: template.id,
+    leaderboardEnabled: true,
+    products: template.products.map((p) => ({
+      name: p.name,
+      price: String(p.price / 100),
+      cost: String(p.cost / 100),
+      imageUrl: "",
+      quantityLimit: p.quantityLimit ? String(p.quantityLimit) : "",
+    })),
   };
 }

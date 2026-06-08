@@ -13,11 +13,13 @@ import { useState } from "react";
 
 type PublicCampaignStoreProps = {
   slug: string;
+  participantSlug?: string;
   products: CartProduct[];
 };
 
 export function PublicCampaignStore({
   slug,
+  participantSlug,
   products,
 }: PublicCampaignStoreProps) {
   const [cartOpen, setCartOpen] = useState(false);
@@ -43,6 +45,7 @@ export function PublicCampaignStore({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           campaignSlug: slug,
+          participantSlug,
           customerName: data.name,
           customerEmail: data.email,
           items: cartLines.map((l) => ({

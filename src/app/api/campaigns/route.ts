@@ -9,6 +9,7 @@ import { z } from "zod";
 const productSchema = z.object({
   name: z.string().min(1),
   price: z.number().int().positive(),
+  cost: z.number().int().min(0).default(0),
   imageUrl: z.string().optional().nullable(),
   quantityLimit: z.number().int().positive().optional().nullable(),
   sortOrder: z.number().int().default(0),
@@ -20,6 +21,8 @@ const campaignSchema = z.object({
   description: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   goalAmount: z.number().int().positive().optional().nullable(),
+  templateId: z.string().optional().nullable(),
+  leaderboardEnabled: z.boolean().optional(),
   published: z.boolean().optional(),
   products: z.array(productSchema).optional(),
 });
@@ -73,6 +76,8 @@ export async function POST(request: Request) {
         description: data.description,
         logoUrl: data.logoUrl,
         goalAmount: data.goalAmount,
+        templateId: data.templateId,
+        leaderboardEnabled: data.leaderboardEnabled ?? true,
         published: data.published ?? false,
         slug,
         userId,
@@ -81,6 +86,7 @@ export async function POST(request: Request) {
               create: data.products.map((p, i) => ({
                 name: p.name,
                 price: p.price,
+                cost: p.cost ?? 0,
                 imageUrl: p.imageUrl,
                 quantityLimit: p.quantityLimit,
                 sortOrder: p.sortOrder ?? i,

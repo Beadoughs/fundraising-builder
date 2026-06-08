@@ -55,21 +55,38 @@ model VerificationToken {
 }
 
 model Campaign {
-  id          String    @id @default(cuid())
-  slug        String    @unique
-  name        String
-  orgName     String
-  description String?
-  logoUrl     String?
-  goalAmount  Int?
-  published   Boolean   @default(false)
-  archived    Boolean   @default(false)
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products    Product[]
-  orders      Order[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String        @id @default(cuid())
+  slug               String        @unique
+  name               String
+  orgName            String
+  description        String?
+  logoUrl            String?
+  goalAmount         Int?
+  templateId         String?
+  leaderboardEnabled Boolean       @default(true)
+  published          Boolean       @default(false)
+  archived           Boolean       @default(false)
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products           Product[]
+  orders             Order[]
+  participants       Participant[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model Participant {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name       String
+  slug       String
+  team       String?
+  email      String?
+  orders     Order[]
+  createdAt  DateTime @default(now())
+
+  @@unique([campaignId, slug])
 }
 
 model Product {
@@ -78,6 +95,7 @@ model Product {
   campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   name          String
   price         Int
+  cost          Int         @default(0)
   imageUrl      String?
   quantityLimit Int?
   sortOrder     Int         @default(0)
@@ -86,17 +104,20 @@ model Product {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  campaignId      String
-  campaign        Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  customerName    String
-  customerEmail   String
-  total           Int
-  status          String      @default("pending")
-  stripeSessionId String?     @unique
-  stripePaymentId String?
-  items           OrderItem[]
-  createdAt       DateTime    @default(now())
+  id                String       @id @default(cuid())
+  campaignId        String
+  campaign          Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  participantId     String?
+  participant       Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+  customerName      String
+  customerEmail     String
+  total             Int
+  status            String       @default("pending")
+  fulfillmentStatus String       @default("pending")
+  stripeSessionId   String?      @unique
+  stripePaymentId   String?
+  items             OrderItem[]
+  createdAt         DateTime     @default(now())
 }
 
 model OrderItem {
@@ -107,5 +128,6 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   name      String
   price     Int
+  cost      Int     @default(0)
   quantity  Int
 }

@@ -7,6 +7,7 @@ const productSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   price: z.number().int().positive(),
+  cost: z.number().int().min(0).default(0),
   imageUrl: z.string().optional().nullable(),
   quantityLimit: z.number().int().positive().optional().nullable(),
   sortOrder: z.number().int().default(0),
@@ -18,6 +19,8 @@ const updateSchema = z.object({
   description: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   goalAmount: z.number().int().positive().optional().nullable(),
+  templateId: z.string().optional().nullable(),
+  leaderboardEnabled: z.boolean().optional(),
   published: z.boolean().optional(),
   archived: z.boolean().optional(),
   products: z.array(productSchema).optional(),
@@ -84,6 +87,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           campaignId: id,
           name: p.name,
           price: p.price,
+          cost: p.cost ?? 0,
           imageUrl: p.imageUrl,
           quantityLimit: p.quantityLimit,
           sortOrder: p.sortOrder ?? i,
@@ -97,6 +101,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       description?: string | null;
       logoUrl?: string | null;
       goalAmount?: number | null;
+      templateId?: string | null;
+      leaderboardEnabled?: boolean;
       published?: boolean;
       archived?: boolean;
     } = {};
@@ -106,6 +112,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.goalAmount !== undefined) updateData.goalAmount = data.goalAmount;
+    if (data.templateId !== undefined) updateData.templateId = data.templateId;
+    if (data.leaderboardEnabled !== undefined)
+      updateData.leaderboardEnabled = data.leaderboardEnabled;
     if (data.published !== undefined) updateData.published = data.published;
     if (data.archived !== undefined) updateData.archived = data.archived;
 
