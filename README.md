@@ -26,6 +26,7 @@ Copy `.env.example` to `.env` and fill in:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string (see [Neon](#database-on-vercel) below) |
 | `AUTH_SECRET` | Yes | Random string (`openssl rand -base64 32`) |
 | `AUTH_URL` | Yes | App URL (e.g. `http://localhost:3000`) |
 | `STRIPE_SECRET_KEY` | For payments | Stripe test secret key |
@@ -67,7 +68,7 @@ Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET` in `.env`.
 
 - Next.js 16 (App Router)
 - TypeScript + Tailwind CSS
-- Prisma + SQLite (swap to Postgres for production)
+- Prisma + PostgreSQL ([Neon](https://neon.tech))
 - NextAuth.js (email magic links)
 - Stripe Checkout
 - Resend (optional, for emails)
@@ -88,23 +89,32 @@ src/
 
 ### Database on Vercel
 
-Vercel serverless functions use ephemeral `/tmp` storage. Without a remote database, campaigns created on one instance are invisible to the next — publish, navigation, and dashboard tabs return "not found".
+Use **[Neon](https://neon.tech)** (serverless PostgreSQL, free tier):
 
-**Use [Turso](https://turso.tech)** (SQLite-compatible, free tier):
+1. Create a project at [console.neon.tech](https://console.neon.tech).
+2. Copy the **connection string** (include `?sslmode=require`).
+3. In the [Vercel project](https://vercel.com) → **Settings** → **Environment Variables**, add:
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | Your Neon connection string |
+
+Apply to **Production**, **Preview**, and **Development** as needed, then **redeploy**.
+
+Apply the schema once (locally or in CI):
 
 ```bash
-# Install Turso CLI, create a database, then:
-turso db tokens create <db-name>
+npm run db:push
 ```
 
-Set these on Vercel (and locally for testing):
+### Preview branches on pull requests
 
-| Variable | Description |
-|----------|-------------|
-| `TURSO_DATABASE_URL` | e.g. `libsql://your-db-org.turso.io` |
-| `TURSO_AUTH_TOKEN` | Token from `turso db tokens create` |
+The [Neon branch workflow](.github/workflows/neon-branch.yml) creates a temporary Neon database branch for each PR and runs `npm run db:push` against it. Configure these in the GitHub repo (**Settings → Secrets and variables → Actions**):
 
-Schema is applied automatically during `npm run build` when both vars are set. To sync manually: `npm run db:push:turso`.
+| Type | Name | Description |
+|------|------|-------------|
+| Variable | `NEON_PROJECT_ID` | Neon project ID (Project Settings in the Neon console) |
+| Secret | `NEON_API_KEY` | Neon API key (Account → API Keys) |
 
 ### Other production setup
 
