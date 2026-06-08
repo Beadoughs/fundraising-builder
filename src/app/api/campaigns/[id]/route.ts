@@ -1,5 +1,5 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getDefaultOrganiserId } from "@/lib/organiser";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -24,16 +24,20 @@ const updateSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function getOwnedCampaign(id: string) {
-  const organiserId = await getDefaultOrganiserId();
+async function getOwnedCampaign(id: string, userId: string) {
   const campaign = await prisma.campaign.findUnique({ where: { id } });
-  if (!campaign || campaign.userId !== organiserId) return null;
+  if (!campaign || campaign.userId !== userId) return null;
   return campaign;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await context.params;
-  const owned = await getOwnedCampaign(id);
+  const owned = await getOwnedCampaign(id, session.user.id);
   if (!owned) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -64,8 +68,13 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await context.params;
-  const existing = await getOwnedCampaign(id);
+  const existing = await getOwnedCampaign(id, session.user.id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -118,8 +127,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await context.params;
-  const existing = await getOwnedCampaign(id);
+  const existing = await getOwnedCampaign(id, session.user.id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

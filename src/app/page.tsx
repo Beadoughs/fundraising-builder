@@ -1,10 +1,13 @@
 import { Header } from "@/components/Header";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth();
+
   return (
     <div className="min-h-screen">
-      <Header />
+      <Header user={session?.user} />
       <main>
         <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:py-24">
           <div className="mx-auto max-w-2xl">
@@ -21,16 +24,20 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                href="/dashboard/campaigns/new"
+                href={
+                  session?.user
+                    ? "/dashboard/campaigns/new"
+                    : "/login?callbackUrl=/dashboard/campaigns/new"
+                }
                 className="inline-flex h-12 items-center justify-center rounded-lg bg-brand px-8 text-base font-semibold text-white shadow-sm hover:bg-brand-dark"
               >
                 Start a fundraiser
               </Link>
               <Link
-                href="/dashboard"
+                href={session?.user ? "/dashboard" : "/login?callbackUrl=/dashboard"}
                 className="inline-flex h-12 items-center justify-center rounded-lg border border-gray-200 bg-white px-8 text-base font-semibold text-gray-700 hover:bg-gray-50"
               >
-                View dashboard
+                {session?.user ? "View dashboard" : "Sign in"}
               </Link>
             </div>
           </div>

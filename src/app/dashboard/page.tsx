@@ -1,13 +1,13 @@
 import { Card } from "@/components/ui/Form";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getDefaultOrganiserId } from "@/lib/organiser";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function DashboardPage() {
-  const organiserId = await getDefaultOrganiserId();
+  const session = await auth();
   const campaigns = await prisma.campaign.findMany({
-    where: { userId: organiserId },
+    where: { userId: session!.user!.id },
     include: {
       products: true,
       orders: { where: { status: "paid" }, select: { total: true } },

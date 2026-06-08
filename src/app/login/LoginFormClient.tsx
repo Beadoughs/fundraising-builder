@@ -29,8 +29,10 @@ function LoginForm() {
 
       if (result?.error) {
         setError("Could not send login link. Please try again.");
-      } else {
+      } else if (result?.ok) {
         window.location.href = `/login/verify?email=${encodeURIComponent(email)}`;
+      } else {
+        setError("Could not send login link. Please try again.");
       }
     } catch {
       setError("Something went wrong. Please try again.");

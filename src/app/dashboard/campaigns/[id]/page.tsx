@@ -3,8 +3,8 @@ import {
   campaignToDraft,
 } from "@/components/CampaignBuilder";
 import { Card } from "@/components/ui/Form";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getDefaultOrganiserId } from "@/lib/organiser";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,7 +13,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function CampaignDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const organiserId = await getDefaultOrganiserId();
+  const session = await auth();
 
   const campaign = await prisma.campaign.findUnique({
     where: { id },
@@ -26,7 +26,7 @@ export default async function CampaignDetailPage({ params }: PageProps) {
     },
   });
 
-  if (!campaign || campaign.userId !== organiserId) {
+  if (!campaign || campaign.userId !== session!.user!.id) {
     notFound();
   }
 
@@ -35,8 +35,6 @@ export default async function CampaignDetailPage({ params }: PageProps) {
   const goalProgress = campaign.goalAmount
     ? Math.min(100, Math.round((totalRaised / campaign.goalAmount) * 100))
     : null;
-
-  const publicUrl = `${process.env.AUTH_URL || "http://localhost:3000"}/c/${campaign.slug}`;
 
   return (
     <div>
@@ -60,18 +58,6 @@ export default async function CampaignDetailPage({ params }: PageProps) {
               </div>
               <p className="text-sm text-gray-500">{campaign.orgName}</p>
             </div>
-            {campaign.published && (
-              <div className="rounded-lg bg-gray-50 px-4 py-3">
-                <p className="text-xs font-medium text-gray-500">Share link</p>
-                <Link
-                  href={`/c/${campaign.slug}`}
-                  target="_blank"
-                  className="break-all text-sm font-medium text-brand hover:underline"
-                >
-                  {publicUrl}
-                </Link>
-              </div>
-            )}
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">

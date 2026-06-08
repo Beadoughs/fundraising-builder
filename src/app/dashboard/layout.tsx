@@ -1,20 +1,27 @@
 import { Header } from "@/components/Header";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login?callbackUrl=/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header user={session.user} />
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-sm text-gray-500">
-              Manage your fundraising campaigns
+              Signed in as {session.user.email}
             </p>
           </div>
           <Link

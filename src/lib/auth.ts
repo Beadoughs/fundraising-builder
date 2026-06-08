@@ -1,3 +1,4 @@
+import { saveDevMagicLink } from "@/lib/dev-magic-link";
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Resend from "next-auth/providers/resend";
@@ -5,10 +6,13 @@ import { prisma } from "@/lib/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   providers: [
     Resend({
       from: process.env.EMAIL_FROM || "Fundraising Builder <onboarding@resend.dev>",
       sendVerificationRequest: async ({ identifier: email, url }) => {
+        saveDevMagicLink(email, url);
+
         if (!process.env.RESEND_API_KEY) {
           console.log("\n========================================");
           console.log(`Magic login link for ${email}:`);
@@ -40,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
     verifyRequest: "/login/verify",
+    error: "/login/error",
   },
   session: { strategy: "jwt" },
   callbacks: {
