@@ -1,7 +1,7 @@
 import { PublicCampaignStore } from "@/components/PublicCampaignStore";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/SafeImage";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +39,7 @@ export default async function PublicCampaignPage({
         <div className="mx-auto max-w-2xl px-4 py-8 text-center">
           {campaign.logoUrl && (
             <div className="relative mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-white shadow-md">
-              <Image
+              <SafeImage
                 src={campaign.logoUrl}
                 alt={campaign.orgName}
                 fill

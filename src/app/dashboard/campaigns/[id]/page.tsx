@@ -112,6 +112,12 @@ export default async function CampaignDetailPage({ params }: PageProps) {
           <h3 className="mb-4 font-semibold text-gray-900">Quick actions</h3>
           <div className="space-y-2">
             <Link
+              href={`/dashboard/campaigns/${campaign.id}#edit`}
+              className="block rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Edit products & details →
+            </Link>
+            <Link
               href={`/dashboard/campaigns/${campaign.id}/preview`}
               className="block rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
@@ -144,7 +150,7 @@ export default async function CampaignDetailPage({ params }: PageProps) {
         />
       </div>
 
-      <div className="mb-12">
+      <div id="edit" className="mb-12 scroll-mt-8">
         <h3 className="mb-4 text-lg font-semibold text-gray-900">
           Edit campaign
         </h3>

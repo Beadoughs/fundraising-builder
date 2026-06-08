@@ -1,10 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { SafeImage } from "@/components/SafeImage";
 import { FieldGroup, Label } from "@/components/ui/Form";
-import { Input } from "@/components/ui/Input";
-import Image from "next/image";
 import { useRef, useState } from "react";
+
+const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
 
 export function ImageUpload({
   value,
@@ -20,19 +21,28 @@ export function ImageUpload({
   const [error, setError] = useState("");
 
   async function handleFile(file: File) {
-    setUploading(true);
     setError("");
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file (JPG, PNG, etc.)");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError("Image must be under 1.5MB");
+      return;
+    }
+
+    setUploading(true);
+
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      onChange(data.url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const dataUrl = await readFileAsDataUrl(file);
+      onChange(dataUrl);
+    } catch {
+      setError("Could not read image. Try a different file.");
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -42,7 +52,7 @@ export function ImageUpload({
       <div className="flex items-start gap-4">
         {value ? (
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-gray-200">
-            <Image src={value} alt="" fill className="object-cover" />
+            <SafeImage src={value} alt="" fill className="object-cover" />
           </div>
         ) : (
           <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 text-gray-400">
@@ -69,7 +79,7 @@ export function ImageUpload({
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
           >
-            {uploading ? "Uploading…" : value ? "Change image" : "Upload image"}
+            {uploading ? "Adding…" : value ? "Change image" : "Add image"}
           </Button>
           {value && (
             <button
@@ -81,8 +91,21 @@ export function ImageUpload({
             </button>
           )}
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          <p className="mt-2 text-xs text-gray-400">JPG or PNG, max 1.5MB</p>
         </div>
       </div>
     </FieldGroup>
   );
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Invalid file"));
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }

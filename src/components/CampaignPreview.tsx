@@ -1,5 +1,5 @@
 import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/SafeImage";
 
 export type PreviewProduct = {
   id: string;
@@ -37,7 +37,7 @@ export function CampaignPreview({
         <div className="px-4 py-8 text-center">
           {campaign.logoUrl && (
             <div className="relative mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-white shadow-md">
-              <Image
+              <SafeImage
                 src={campaign.logoUrl}
                 alt={campaign.orgName}
                 fill
@@ -86,7 +86,7 @@ export function CampaignPreview({
             >
               <div className="relative aspect-[4/3] bg-gray-50">
                 {product.imageUrl ? (
-                  <Image
+                  <SafeImage
                     src={product.imageUrl}
                     alt={product.name}
                     fill

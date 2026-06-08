@@ -100,15 +100,15 @@ export async function PATCH(request: Request, context: RouteContext) {
       goalAmount?: number | null;
       published?: boolean;
       archived?: boolean;
-    } = {
-      name: data.name,
-      orgName: data.orgName,
-      description: data.description,
-      logoUrl: data.logoUrl,
-      goalAmount: data.goalAmount,
-      published: data.published,
-      archived: data.archived,
-    };
+    } = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.orgName !== undefined) updateData.orgName = data.orgName;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
+    if (data.goalAmount !== undefined) updateData.goalAmount = data.goalAmount;
+    if (data.published !== undefined) updateData.published = data.published;
+    if (data.archived !== undefined) updateData.archived = data.archived;
 
     if (data.archived === true) {
       updateData.published = false;

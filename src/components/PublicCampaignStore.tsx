@@ -8,7 +8,7 @@ import {
   type CartProduct,
 } from "@/components/Cart";
 import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/SafeImage";
 import { useState } from "react";
 
 type PublicCampaignStoreProps = {
@@ -72,7 +72,7 @@ export function PublicCampaignStore({
           >
             <div className="relative aspect-[4/3] bg-gray-50">
               {product.imageUrl ? (
-                <Image
+                <SafeImage
                   src={product.imageUrl}
                   alt={product.name}
                   fill

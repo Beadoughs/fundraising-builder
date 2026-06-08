@@ -114,12 +114,20 @@ export default async function DashboardPage() {
                         <p className="font-semibold">{campaign._count.orders}</p>
                       </div>
                     </div>
-                    <Link
-                      href={`/dashboard/campaigns/${campaign.id}`}
-                      className="text-sm font-medium text-gray-500 hover:text-brand"
-                    >
-                      Manage
-                    </Link>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Link
+                        href={`/dashboard/campaigns/${campaign.id}/preview`}
+                        className="font-medium text-gray-500 hover:text-brand"
+                      >
+                        Share
+                      </Link>
+                      <Link
+                        href={`/dashboard/campaigns/${campaign.id}`}
+                        className="font-medium text-brand hover:underline"
+                      >
+                        Edit
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </Card>

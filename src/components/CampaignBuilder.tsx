@@ -82,7 +82,7 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
     }));
   }
 
-  function parsePayload(published?: boolean) {
+  function parsePayload() {
     const products = form.products
       .filter((p) => p.name.trim() && p.price.trim())
       .map((p, i) => ({
@@ -107,7 +107,6 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
       goalAmount: form.goalAmount
         ? Math.round(parseFloat(form.goalAmount) * 100)
         : null,
-      published,
       products,
     };
   }
@@ -117,7 +116,7 @@ export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
     setSaving(true);
 
     try {
-      const payload = parsePayload(false);
+      const payload = parsePayload();
 
       const url =
         mode === "edit" && initial?.id

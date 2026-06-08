@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
-import Image from "next/image";
+import { SafeImage } from "@/components/SafeImage";
 import { useCallback, useEffect, useState } from "react";
 
 export type CartProduct = {
@@ -146,7 +146,7 @@ export function CartDrawer({
                 <li key={productId} className="flex gap-3">
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                     {product.imageUrl ? (
-                      <Image
+                      <SafeImage
                         src={product.imageUrl}
                         alt=""
                         fill

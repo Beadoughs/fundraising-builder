@@ -8,9 +8,11 @@ import { useEffect, useRef, useState } from "react";
 export function CampaignSharePanel({
   slug,
   campaignName,
+  campaignId,
 }: {
   slug: string;
   campaignName: string;
+  campaignId: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [publicUrl, setPublicUrl] = useState("");
@@ -79,6 +81,12 @@ export function CampaignSharePanel({
             className="mt-3 inline-block text-sm font-medium text-brand hover:underline"
           >
             Open live page →
+          </Link>
+          <Link
+            href={`/dashboard/campaigns/${campaignId}`}
+            className="mt-2 block text-sm font-medium text-gray-600 hover:text-brand"
+          >
+            Edit fundraiser →
           </Link>
         </div>
 

@@ -55,7 +55,11 @@ export function CampaignPreviewPage({
     <div className="mx-auto max-w-3xl">
       {published ? (
         <div className="mb-8">
-          <CampaignSharePanel slug={slug} campaignName={preview.name} />
+          <CampaignSharePanel
+            slug={slug}
+            campaignName={preview.name}
+            campaignId={campaignId}
+          />
         </div>
       ) : (
         <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
@@ -91,7 +95,7 @@ export function CampaignPreviewPage({
           href={`/dashboard/campaigns/${campaignId}`}
           className="inline-flex flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
         >
-          Edit campaign
+          Edit fundraiser
         </Link>
         {!published ? (
           <Button
@@ -104,12 +108,21 @@ export function CampaignPreviewPage({
             {publishing ? "Publishing…" : "Publish fundraiser"}
           </Button>
         ) : (
-          <Link
-            href="/dashboard"
-            className="inline-flex flex-1 items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Back to dashboard
-          </Link>
+          <>
+            <Link
+              href={`/c/${slug}`}
+              target="_blank"
+              className="inline-flex flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              View live page
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex flex-1 items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              Dashboard
+            </Link>
+          </>
         )}
       </div>
 
