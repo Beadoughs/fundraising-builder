@@ -9,6 +9,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Fallback satisfies Prisma config typing when DATABASE_URL is unset at build time.
+    url:
+      process.env.DATABASE_URL ??
+      "postgresql://localhost:5432/fundraising_builder?schema=public",
   },
 });
