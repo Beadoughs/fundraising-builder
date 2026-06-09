@@ -1,19 +1,20 @@
+import { getClientErrorMessage } from "@/lib/api-errors";
 import { hashPassword } from "@/lib/password";
+import {
+  normalizeRegistrationEmail,
+  registerSchema,
+} from "@/lib/register";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  name: z.string().min(1, "Name is required"),
-});
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const data = registerSchema.parse(body);
-    const email = data.email.trim().toLowerCase();
+    const email = normalizeRegistrationEmail(data.email);
     const passwordHash = await hashPassword(data.password);
 
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -48,10 +49,11 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: "Failed to create account" },
-      { status: 500 }
+
+    const { message, status } = getClientErrorMessage(
+      error,
+      "Failed to create account"
     );
+    return NextResponse.json({ error: message }, { status });
   }
 }
