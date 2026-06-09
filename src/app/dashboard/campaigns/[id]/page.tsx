@@ -4,7 +4,7 @@ import { GoalProgress } from "@/components/dashboard/GoalProgress";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Leaderboard } from "@/components/dashboard/Leaderboard";
 import { Card } from "@/components/ui/Form";
-import { getCampaignById } from "@/lib/campaigns";
+import { requireOwnedCampaignPage } from "@/lib/campaigns";
 import {
   getCampaignStats,
   getFulfillmentSummary,
@@ -23,7 +23,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function CampaignOverviewPage({ params }: PageProps) {
   const { id } = await params;
 
-  if (!(await getCampaignById(id))) notFound();
+  await requireOwnedCampaignPage(id);
 
   const campaign = await prisma.campaign.findUnique({
     where: { id },

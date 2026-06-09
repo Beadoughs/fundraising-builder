@@ -50,6 +50,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   debug: process.env.NODE_ENV === "development",
+  session: { strategy: "jwt" },
   providers: [createEmailProvider()],
   pages: {
     signIn: "/login",
@@ -57,9 +58,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login/error",
   },
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    jwt({ token, user, trigger, session }) {
+      if (user) {
+        token.id = user.id;
+        token.onboardingComplete = user.onboardingComplete;
+        token.name = user.name;
+      }
+      if (trigger === "update" && session?.user) {
+        if (session.user.onboardingComplete !== undefined) {
+          token.onboardingComplete = session.user.onboardingComplete;
+        }
+        if (session.user.name !== undefined) {
+          token.name = session.user.name;
+        }
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
+        session.user.name = (token.name as string | null) ?? null;
+        session.user.onboardingComplete = Boolean(token.onboardingComplete);
       }
       return session;
     },

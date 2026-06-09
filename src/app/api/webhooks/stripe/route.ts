@@ -1,3 +1,4 @@
+import { syncConnectOnboardingStatus } from "@/lib/connect";
 import { prisma } from "@/lib/db";
 import { sendOrderReceipt } from "@/lib/email";
 import { stripe } from "@/lib/stripe";
@@ -113,6 +114,16 @@ export async function POST(request: Request) {
       await markOrderPaid(event.data.object as Stripe.Checkout.Session);
     } catch (error) {
       console.error(`[stripe webhook] Failed to process ${event.type}:`, error);
+      return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+    }
+  }
+
+  if (event.type === "account.updated") {
+    try {
+      const account = event.data.object as Stripe.Account;
+      await syncConnectOnboardingStatus(account.id);
+    } catch (error) {
+      console.error("[stripe webhook] Failed to process account.updated:", error);
       return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
     }
   }

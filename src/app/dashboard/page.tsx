@@ -2,7 +2,7 @@ import { CampaignManageActions } from "@/components/CampaignManageActions";
 import { GoalProgress } from "@/components/dashboard/GoalProgress";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { Card } from "@/components/ui/Form";
-import { getDefaultOrganiserId } from "@/lib/organiser";
+import { requirePageUser } from "@/lib/session";
 import { getOrganisationStats } from "@/lib/fundraising-stats";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
@@ -14,7 +14,8 @@ const campaignInclude = {
 };
 
 export default async function DashboardPage() {
-  const userId = await getDefaultOrganiserId();
+  const user = await requirePageUser();
+  const userId = user.id;
 
   const [orgStats, activeCampaigns, archivedCampaigns] = await Promise.all([
     getOrganisationStats(userId),

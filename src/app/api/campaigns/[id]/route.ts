@@ -1,5 +1,7 @@
+import { getOwnedCampaign } from "@/lib/campaigns";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
+import { requireApiUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -28,16 +30,13 @@ const updateSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function getCampaign(id: string) {
-  ensureDatabaseReady();
-  return prisma.campaign.findUnique({ where: { id } });
-}
-
 export async function GET(_request: Request, context: RouteContext) {
-  ensureDatabaseReady();
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
 
+  ensureDatabaseReady();
   const { id } = await context.params;
-  const owned = await getCampaign(id);
+  const owned = await getOwnedCampaign(id, authResult.user.id);
   if (!owned) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -68,17 +67,35 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+
   try {
     ensureDatabaseReady();
-
     const { id } = await context.params;
-    const existing = await getCampaign(id);
+    const existing = await getOwnedCampaign(id, authResult.user.id);
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const body = await request.json();
     const data = updateSchema.parse(body);
+
+    if (data.published === true) {
+      const organiser = await prisma.user.findUnique({
+        where: { id: authResult.user.id },
+        select: { stripeConnectOnboarded: true },
+      });
+      if (!organiser?.stripeConnectOnboarded) {
+        return NextResponse.json(
+          {
+            error:
+              "Complete payout setup before publishing. Go to Dashboard → Payouts.",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     if (data.products) {
       await prisma.product.deleteMany({ where: { campaignId: id } });
@@ -144,10 +161,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  ensureDatabaseReady();
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
 
+  ensureDatabaseReady();
   const { id } = await context.params;
-  const existing = await getCampaign(id);
+  const existing = await getOwnedCampaign(id, authResult.user.id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

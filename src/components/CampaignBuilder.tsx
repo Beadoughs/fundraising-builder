@@ -19,16 +19,17 @@ export type { CampaignDraft, ProductDraft };
 type CampaignBuilderProps = {
   initial?: CampaignDraft & { id?: string; published?: boolean; slug?: string };
   mode: "create" | "edit";
+  defaultOrgName?: string;
 };
 
-export function CampaignBuilder({ initial, mode }: CampaignBuilderProps) {
+export function CampaignBuilder({ initial, mode, defaultOrgName }: CampaignBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<CampaignDraft>(
     initial || {
       name: "",
-      orgName: "",
+      orgName: defaultOrgName || "",
       description: "",
       logoUrl: "",
       goalAmount: "",

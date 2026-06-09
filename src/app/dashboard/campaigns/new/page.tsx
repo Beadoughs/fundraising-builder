@@ -1,6 +1,14 @@
 import { CampaignBuilder } from "@/components/CampaignBuilder";
+import { prisma } from "@/lib/db";
+import { requirePageUser } from "@/lib/session";
 
-export default function NewCampaignPage() {
+export default async function NewCampaignPage() {
+  const user = await requirePageUser();
+  const profile = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { orgName: true },
+  });
+
   return (
     <div>
       <div className="mb-8">
@@ -9,7 +17,7 @@ export default function NewCampaignPage() {
           Set up your products, costs, and goal — then share with your community.
         </p>
       </div>
-      <CampaignBuilder mode="create" />
+      <CampaignBuilder mode="create" defaultOrgName={profile?.orgName ?? undefined} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { getDefaultOrganiserId } from "@/lib/organiser";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
+import { requireApiUser } from "@/lib/session";
 import { slugify } from "@/lib/utils";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
@@ -38,7 +38,9 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 export async function GET() {
-  const userId = await getDefaultOrganiserId();
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+  const userId = authResult.user.id;
 
   const campaigns = await prisma.campaign.findMany({
     where: { userId, archived: false },
@@ -62,9 +64,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+  const userId = authResult.user.id;
+
   try {
     ensureDatabaseReady();
-    const userId = await getDefaultOrganiserId();
     const body = await request.json();
     const data = campaignSchema.parse(body);
     const slug = await uniqueSlug(data.name);

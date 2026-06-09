@@ -48,9 +48,10 @@ function LoginForm() {
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="rounded-xl border border-gray-100 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900">Sign in</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Sign in or create account</h1>
         <p className="mt-2 text-sm text-gray-500">
-          Enter your email and we&apos;ll send you a magic link. No password needed.
+          Enter your email and we&apos;ll send you a magic link. New organisers are
+          registered automatically — no password needed.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8">

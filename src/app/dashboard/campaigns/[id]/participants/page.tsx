@@ -1,6 +1,6 @@
 import { CampaignNav } from "@/components/dashboard/CampaignNav";
 import { ParticipantManager } from "@/components/ParticipantManager";
-import { getCampaignById } from "@/lib/campaigns";
+import { requireOwnedCampaignPage } from "@/lib/campaigns";
 import { getParticipantStats } from "@/lib/fundraising-stats";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
@@ -12,8 +12,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function ParticipantsPage({ params }: PageProps) {
   const { id } = await params;
 
-  const campaign = await getCampaignById(id);
-  if (!campaign) notFound();
+  const { campaign } = await requireOwnedCampaignPage(id);
 
   const full = await prisma.campaign.findUnique({ where: { id } });
   if (!full) notFound();

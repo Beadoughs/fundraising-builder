@@ -2,7 +2,7 @@ import { CampaignNav } from "@/components/dashboard/CampaignNav";
 import { GoalProgress } from "@/components/dashboard/GoalProgress";
 import { Leaderboard } from "@/components/dashboard/Leaderboard";
 import { PrintButton } from "@/components/PrintButton";
-import { getCampaignById } from "@/lib/campaigns";
+import { requireOwnedCampaignPage } from "@/lib/campaigns";
 import {
   getCampaignStats,
   getFulfillmentSummary,
@@ -20,8 +20,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function ReportsPage({ params }: PageProps) {
   const { id } = await params;
 
-  const campaign = await getCampaignById(id);
-  if (!campaign) notFound();
+  const { campaign } = await requireOwnedCampaignPage(id);
 
   const full = await prisma.campaign.findUnique({ where: { id } });
   if (!full) notFound();

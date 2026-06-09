@@ -1,6 +1,7 @@
-import { getCampaignById } from "@/lib/campaigns";
+import { getOwnedCampaign } from "@/lib/campaigns";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
+import { requireApiUser } from "@/lib/session";
 import { slugify } from "@/lib/utils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -31,10 +32,13 @@ async function uniqueParticipantSlug(
 }
 
 export async function GET(_request: Request, context: RouteContext) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+
   ensureDatabaseReady();
   const { id } = await context.params;
 
-  if (!(await getCampaignById(id))) {
+  if (!(await getOwnedCampaign(id, authResult.user.id))) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -47,11 +51,14 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+
   try {
     ensureDatabaseReady();
     const { id } = await context.params;
 
-    if (!(await getCampaignById(id))) {
+    if (!(await getOwnedCampaign(id, authResult.user.id))) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

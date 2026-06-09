@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
+import { sumCost } from "@/lib/profit";
 import { stripe, isStripeConfigured } from "@/lib/stripe";
 import { getAppBaseUrl } from "@/lib/url";
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { z } from "zod";
 
 const checkoutSchema = z.object({
@@ -33,11 +35,32 @@ export async function POST(request: Request) {
 
     const campaign = await prisma.campaign.findFirst({
       where: { slug: data.campaignSlug, published: true },
-      include: { products: true },
+      include: {
+        products: true,
+        user: {
+          select: {
+            stripeConnectAccountId: true,
+            stripeConnectOnboarded: true,
+          },
+        },
+      },
     });
 
     if (!campaign) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+
+    if (
+      !campaign.user.stripeConnectOnboarded ||
+      !campaign.user.stripeConnectAccountId
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "This fundraiser is not accepting payments yet. The organiser needs to complete payout setup.",
+        },
+        { status: 503 }
+      );
     }
 
     let participantId: string | undefined;
@@ -114,8 +137,10 @@ export async function POST(request: Request) {
     });
 
     const origin = getAppBaseUrl(new URL(request.url).origin);
+    const totalCost = sumCost(lineItems);
+    const profit = total - totalCost;
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       customer_email: data.customerEmail,
       line_items: lineItems.map((item) => ({
@@ -132,7 +157,18 @@ export async function POST(request: Request) {
       },
       success_url: `${origin}/c/${campaign.slug}/success?order=${order.id}`,
       cancel_url: `${origin}/c/${campaign.slug}?cancelled=1`,
-    });
+    };
+
+    if (profit > 0) {
+      sessionParams.payment_intent_data = {
+        transfer_data: {
+          destination: campaign.user.stripeConnectAccountId,
+        },
+        application_fee_amount: totalCost,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     await prisma.order.update({
       where: { id: order.id },

@@ -1,6 +1,6 @@
 import { CampaignPreviewPage } from "@/components/CampaignPreviewPage";
 import { CampaignNav } from "@/components/dashboard/CampaignNav";
-import { getCampaignById } from "@/lib/campaigns";
+import { requireOwnedCampaignPage } from "@/lib/campaigns";
 import { prisma } from "@/lib/db";
 import { sumRevenue } from "@/lib/profit";
 import { notFound } from "next/navigation";
@@ -12,8 +12,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function CampaignPreviewRoute({ params }: PageProps) {
   const { id } = await params;
 
-  const campaign = await getCampaignById(id);
-  if (!campaign) notFound();
+  const { campaign } = await requireOwnedCampaignPage(id);
 
   const full = await prisma.campaign.findUnique({
     where: { id },

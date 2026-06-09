@@ -1,6 +1,7 @@
-import { getCampaignById } from "@/lib/campaigns";
+import { getOwnedCampaign } from "@/lib/campaigns";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
+import { requireApiUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,11 +14,14 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+
   try {
     ensureDatabaseReady();
     const { id, orderId } = await context.params;
 
-    if (!(await getCampaignById(id))) {
+    if (!(await getOwnedCampaign(id, authResult.user.id))) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

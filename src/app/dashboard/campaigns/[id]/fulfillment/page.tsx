@@ -1,7 +1,7 @@
 import { CampaignNav } from "@/components/dashboard/CampaignNav";
 import { FulfillmentBoard } from "@/components/FulfillmentBoard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
-import { getCampaignById } from "@/lib/campaigns";
+import { requireOwnedCampaignPage } from "@/lib/campaigns";
 import {
   getCollectionList,
   getFulfillmentSummary,
@@ -18,8 +18,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function FulfillmentPage({ params }: PageProps) {
   const { id } = await params;
 
-  const campaign = await getCampaignById(id);
-  if (!campaign) notFound();
+  const { campaign } = await requireOwnedCampaignPage(id);
 
   const full = await prisma.campaign.findUnique({
     where: { id },

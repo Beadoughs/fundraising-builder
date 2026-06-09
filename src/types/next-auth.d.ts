@@ -5,7 +5,19 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      onboardingComplete?: boolean;
     };
+  }
+
+  interface User {
+    onboardingComplete?: boolean;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    onboardingComplete?: boolean;
   }
 }
 

@@ -1,4 +1,4 @@
-import { getCampaignById } from "@/lib/campaigns";
+import { getOwnedCampaign } from "@/lib/campaigns";
 import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
 import {
@@ -7,6 +7,7 @@ import {
   getProductStats,
 } from "@/lib/fundraising-stats";
 import { sumProfit } from "@/lib/profit";
+import { requireApiUser } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 import { NextResponse } from "next/server";
 
@@ -23,12 +24,15 @@ function toCsv(headers: string[], rows: (string | number)[][]): string {
 }
 
 export async function GET(request: Request, context: RouteContext) {
+  const authResult = await requireApiUser();
+  if (authResult.response) return authResult.response;
+
   ensureDatabaseReady();
   const { id } = await context.params;
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "orders";
 
-  const campaign = await getCampaignById(id);
+  const campaign = await getOwnedCampaign(id, authResult.user.id);
   if (!campaign) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
