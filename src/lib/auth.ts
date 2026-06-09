@@ -1,43 +1,8 @@
-import { saveDevMagicLink } from "@/lib/dev-magic-link";
-import { getEmailFrom, isPostmarkConfigured, sendEmail } from "@/lib/postmark";
+import { verifyPassword } from "@/lib/password";
+import { prisma } from "@/lib/db";
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import type { Provider } from "next-auth/providers";
-import { prisma } from "@/lib/db";
-
-function createEmailProvider(): Provider {
-  return {
-    id: "email",
-    type: "email",
-    name: "Email",
-    from: getEmailFrom(),
-    maxAge: 24 * 60 * 60,
-    async sendVerificationRequest({ identifier: email, url }) {
-      saveDevMagicLink(email, url);
-
-      if (!isPostmarkConfigured()) {
-        console.log("\n========================================");
-        console.log(`Magic login link for ${email}:`);
-        console.log(url);
-        console.log("========================================\n");
-        return;
-      }
-
-      await sendEmail({
-        to: email,
-        subject: "Sign in to Beadoughs",
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
-            <h2 style="color:#00337C">Sign in to Beadoughs</h2>
-            <p>Click the button below to sign in. This link expires in 24 hours.</p>
-            <a href="${url}" style="display:inline-block;background:#00337C;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0">Sign in</a>
-            <p style="color:#666;font-size:13px">If you didn't request this, you can ignore this email.</p>
-          </div>
-        `,
-      });
-    },
-  };
-}
+import Credentials from "next-auth/providers/credentials";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -45,10 +10,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   debug: process.env.NODE_ENV === "development",
   session: { strategy: "jwt" },
-  providers: [createEmailProvider()],
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email?.toString().trim().toLowerCase();
+        const password = credentials?.password?.toString();
+
+        if (!email || !password) {
+          return null;
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user?.passwordHash) {
+          return null;
+        }
+
+        const valid = await verifyPassword(password, user.passwordHash);
+        if (!valid) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          onboardingComplete: user.onboardingComplete,
+        };
+      },
+    }),
+  ],
   pages: {
     signIn: "/login",
-    verifyRequest: "/login/verify",
     error: "/login/error",
   },
   callbacks: {

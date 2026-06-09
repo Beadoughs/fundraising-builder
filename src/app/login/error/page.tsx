@@ -2,11 +2,10 @@ import { Header } from "@/components/Header";
 import Link from "next/link";
 
 const MESSAGES: Record<string, string> = {
-  Verification:
-    "This sign-in link is invalid or has already been used. Go back and request a fresh one.",
+  CredentialsSignin: "Invalid email or password. Please try again.",
   Configuration:
     process.env.NODE_ENV === "development"
-      ? "Sign-in failed — usually the magic link was incomplete, already used, or the dev server restarted. Request a new link and click Sign in now on the next screen."
+      ? "Sign-in is not configured correctly. Check AUTH_SECRET and restart the dev server."
       : "Sign-in is not configured correctly. Contact support.",
   AccessDenied: "You do not have access to sign in.",
   Default: "Something went wrong during sign-in. Please try again.",
