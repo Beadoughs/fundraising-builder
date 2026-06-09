@@ -8,6 +8,10 @@ export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
 
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+  }
+
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }

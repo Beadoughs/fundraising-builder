@@ -1,7 +1,9 @@
-export function getAppBaseUrl(): string {
+export function getAppBaseUrl(requestOrigin?: string): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.AUTH_URL ||
+    process.env.NEXTAUTH_URL ||
+    requestOrigin ||
     "http://localhost:3000"
   );
 }

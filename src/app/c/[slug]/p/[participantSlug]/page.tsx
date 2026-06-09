@@ -23,7 +23,7 @@ export default async function ParticipantStorePage({
   const { slug, participantSlug } = await params;
   const { cancelled } = await searchParams;
 
-  const campaign = await prisma.campaign.findUnique({
+  const campaign = await prisma.campaign.findFirst({
     where: { slug, published: true },
     include: {
       products: { orderBy: { sortOrder: "asc" } },

@@ -29,9 +29,9 @@ Copy `.env.example` to `.env` and fill in:
 | `DATABASE_URL` | Yes | PostgreSQL connection string (see [Neon](#database-on-vercel) below) |
 | `AUTH_SECRET` | Yes | Random string (`openssl rand -base64 32`) |
 | `AUTH_URL` | Yes | App URL (e.g. `http://localhost:3000`) |
-| `STRIPE_SECRET_KEY` | For payments | Stripe test secret key |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | For payments | Stripe test publishable key |
-| `STRIPE_WEBHOOK_SECRET` | For payments | From Stripe CLI or dashboard |
+| `STRIPE_SECRET_KEY` | For payments | Stripe secret key (`sk_test_…` or `sk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | For payments | Webhook signing secret (`whsec_…`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional | Not required for Stripe Checkout redirect |
 | `RESEND_API_KEY` | Optional | Email provider (dev mode logs links to console) |
 
 ### 3. Set up the database
@@ -118,6 +118,24 @@ The [Neon branch workflow](.github/workflows/neon-branch.yml) creates a temporar
 
 ### Other production setup
 
-- Set real `AUTH_SECRET`, Stripe keys, and `RESEND_API_KEY`
+Set these in Vercel → **Settings** → **Environment Variables** (Production), then redeploy:
+
+| Variable | Example |
+|----------|---------|
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `AUTH_URL` | `https://fundraising-builder.vercel.app` |
+| `STRIPE_SECRET_KEY` | `sk_live_…` from Stripe Dashboard |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` from webhook endpoint (below) |
+| `RESEND_API_KEY` | Optional — receipts log to console without it |
+
+#### Stripe webhook (required for paid orders)
+
+Orders stay `pending` until Stripe calls your webhook. In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks):
+
+1. **Add endpoint** → `https://fundraising-builder.vercel.app/api/webhooks/stripe`
+2. Select event **`checkout.session.completed`**
+3. Copy the **Signing secret** → `STRIPE_WEBHOOK_SECRET` in Vercel → redeploy
+
+Test a purchase with card `4242 4242 4242 4242`, any future expiry, any CVC.
+
 - Configure file storage (S3/Cloudinary) instead of local `public/uploads/`
-- Deploy to Vercel, Railway, or similar

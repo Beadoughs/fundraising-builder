@@ -17,7 +17,7 @@ export default async function SuccessPage({
   const { slug } = await params;
   const { order: orderId } = await searchParams;
 
-  const campaign = await prisma.campaign.findUnique({
+  const campaign = await prisma.campaign.findFirst({
     where: { slug, published: true },
   });
 

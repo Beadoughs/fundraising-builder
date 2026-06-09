@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { stripe, isStripeConfigured } from "@/lib/stripe";
+import { getAppBaseUrl } from "@/lib/url";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = checkoutSchema.parse(body);
 
-    const campaign = await prisma.campaign.findUnique({
+    const campaign = await prisma.campaign.findFirst({
       where: { slug: data.campaignSlug, published: true },
       include: { products: true },
     });
@@ -112,10 +113,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const origin =
-      process.env.AUTH_URL ||
-      process.env.NEXTAUTH_URL ||
-      new URL(request.url).origin;
+    const origin = getAppBaseUrl(new URL(request.url).origin);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
