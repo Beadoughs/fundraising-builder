@@ -1,9 +1,5 @@
-import { Resend } from "resend";
+import { isPostmarkConfigured, sendEmail } from "./postmark";
 import { formatCurrency } from "./utils";
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
 
 export async function sendOrderReceipt(params: {
   to: string;
@@ -54,13 +50,12 @@ export async function sendOrderReceipt(params: {
     </div>
   `;
 
-  if (!resend) {
+  if (!isPostmarkConfigured()) {
     console.log(`[DEV] Order receipt for ${to}:\n`, html);
     return { success: true, dev: true };
   }
 
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM || "Beadoughs <onboarding@resend.dev>",
+  await sendEmail({
     to,
     subject: `Order confirmed — ${campaignName}`,
     html,

@@ -32,5 +32,5 @@ export function getDevMagicLink(email: string): string | null {
 }
 
 export function isDevMagicLinkEnabled(): boolean {
-  return process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY;
+  return process.env.NODE_ENV === "development" && !process.env.POSTMARK_SERVER_TOKEN;
 }

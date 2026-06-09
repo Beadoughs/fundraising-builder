@@ -32,7 +32,8 @@ Copy `.env.example` to `.env` and fill in:
 | `STRIPE_SECRET_KEY` | For payments | Stripe secret key (`sk_test_…` or `sk_live_…`) |
 | `STRIPE_WEBHOOK_SECRET` | For payments | Webhook signing secret (`whsec_…`) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional | Not required for Stripe Checkout redirect |
-| `RESEND_API_KEY` | Optional | Email provider (dev mode logs links to console) |
+| `POSTMARK_SERVER_TOKEN` | Optional | Postmark server token (dev mode logs links to console) |
+| `EMAIL_FROM` | With Postmark | Verified sender address in Postmark (e.g. `Beadoughs <noreply@yourdomain.com>`) |
 
 ### 3. Set up the database
 
@@ -71,7 +72,7 @@ Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET` in `.env`.
 - Prisma + PostgreSQL ([Neon](https://neon.tech))
 - NextAuth.js (email magic links)
 - Stripe Checkout
-- Resend (optional, for emails)
+- Postmark (optional, for emails)
 
 ## Project structure
 
@@ -126,7 +127,8 @@ Set these in Vercel → **Settings** → **Environment Variables** (Production),
 | `AUTH_URL` | `https://fundraising-builder.vercel.app` |
 | `STRIPE_SECRET_KEY` | `sk_live_…` from Stripe Dashboard |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` from webhook endpoint (below) |
-| `RESEND_API_KEY` | Optional — receipts log to console without it |
+| `POSTMARK_SERVER_TOKEN` | Postmark server token |
+| `EMAIL_FROM` | Verified sender in Postmark (e.g. `Beadoughs <noreply@yourdomain.com>`) |
 
 #### Stripe webhook (required for paid orders)
 

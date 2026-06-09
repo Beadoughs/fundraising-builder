@@ -1,4 +1,5 @@
 import { saveDevMagicLink } from "@/lib/dev-magic-link";
+import { getEmailFrom, isPostmarkConfigured, sendEmail } from "@/lib/postmark";
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Provider } from "next-auth/providers";
@@ -9,14 +10,12 @@ function createEmailProvider(): Provider {
     id: "email",
     type: "email",
     name: "Email",
-    from:
-      process.env.EMAIL_FROM ||
-      "Beadoughs <onboarding@resend.dev>",
+    from: getEmailFrom(),
     maxAge: 24 * 60 * 60,
     async sendVerificationRequest({ identifier: email, url }) {
       saveDevMagicLink(email, url);
 
-      if (!process.env.RESEND_API_KEY) {
+      if (!isPostmarkConfigured()) {
         console.log("\n========================================");
         console.log(`Magic login link for ${email}:`);
         console.log(url);
@@ -24,12 +23,7 @@ function createEmailProvider(): Provider {
         return;
       }
 
-      const { Resend: ResendClient } = await import("resend");
-      const resend = new ResendClient(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from:
-          process.env.EMAIL_FROM ||
-          "Beadoughs <onboarding@resend.dev>",
+      await sendEmail({
         to: email,
         subject: "Sign in to Beadoughs",
         html: `
