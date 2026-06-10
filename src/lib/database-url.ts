@@ -7,11 +7,15 @@ export function deriveDirectDatabaseUrl(databaseUrl: string): string {
     const parsed = new URL(databaseUrl);
     if (parsed.hostname.includes("-pooler")) {
       parsed.hostname = parsed.hostname.replace("-pooler", "");
-      return parsed.toString();
     }
-    return databaseUrl;
+    // Session-mode pooler flags must be removed for DDL.
+    parsed.searchParams.delete("pgbouncer");
+    return parsed.toString();
   } catch {
-    return databaseUrl.replace(/-pooler(?=\.)/, "");
+    return databaseUrl
+      .replace(/-pooler(?=\.)/, "")
+      .replace(/([?&])pgbouncer=true(&|$)/, "$1")
+      .replace(/[?&]$/, "");
   }
 }
 
@@ -25,8 +29,11 @@ export function getDirectDatabaseUrlCandidates(): string[] {
   }
 
   if (databaseUrl) {
-    candidates.push(deriveDirectDatabaseUrl(databaseUrl));
-    if (!explicit) {
+    const derivedDirect = deriveDirectDatabaseUrl(databaseUrl);
+    candidates.push(derivedDirect);
+    if (derivedDirect !== databaseUrl) {
+      candidates.push(databaseUrl);
+    } else if (!explicit) {
       candidates.push(databaseUrl);
     }
   }

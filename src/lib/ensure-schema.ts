@@ -1,10 +1,10 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 import { getDirectDatabaseUrlCandidates } from "@/lib/database-url";
 import { prisma } from "@/lib/db";
 
 const globalForSchema = globalThis as unknown as {
-  schemaEnsurePromise?: Promise<void>;
+  schemaEnsurePromise?: Promise<SchemaEnsureResult>;
   ddlPrisma?: PrismaClient;
   ddlPrismaUrl?: string;
 };
@@ -36,6 +36,15 @@ const SCHEMA_STATEMENTS = [
   `ALTER TABLE "Campaign" ADD COLUMN IF NOT EXISTS "endDate" TIMESTAMP(3)`,
 ];
 
+export type SchemaEnsureResult =
+  | { ok: true }
+  | {
+      ok: false;
+      message: string;
+      missing: Record<string, string[]>;
+      cause?: unknown;
+    };
+
 export class SchemaEnsureError extends Error {
   constructor(
     message: string,
@@ -46,36 +55,42 @@ export class SchemaEnsureError extends Error {
   }
 }
 
-async function tableHasRequiredColumns(
-  tableName: string,
-  columns: readonly string[]
-): Promise<boolean> {
-  const rows = await prisma.$queryRaw<{ column_name: string }[]>`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = ${tableName}
-      AND column_name IN (${Prisma.join([...columns])})
+async function getTableColumns(tableName: string): Promise<Set<string>> {
+  const rows = await prisma.$queryRaw<{ attname: string }[]>`
+    SELECT a.attname
+    FROM pg_attribute a
+    INNER JOIN pg_class c ON a.attrelid = c.oid
+    INNER JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE n.nspname = 'public'
+      AND c.relname = ${tableName}
+      AND a.attnum > 0
+      AND NOT a.attisdropped
   `;
 
-  return rows.length === columns.length;
+  return new Set(rows.map((row) => row.attname));
+}
+
+async function getMissingColumns(): Promise<Record<string, string[]>> {
+  const missing: Record<string, string[]> = {};
+
+  for (const [table, columns] of Object.entries(REQUIRED_TABLE_COLUMNS)) {
+    const existing = await getTableColumns(table);
+    const absent = columns.filter((column) => !existing.has(column));
+    if (absent.length > 0) {
+      missing[table] = absent;
+    }
+  }
+
+  return missing;
 }
 
 async function isSchemaComplete(): Promise<boolean> {
-  const checks = await Promise.all(
-    Object.entries(REQUIRED_TABLE_COLUMNS).map(([table, columns]) =>
-      tableHasRequiredColumns(table, columns)
-    )
-  );
-
-  return checks.every(Boolean);
+  const missing = await getMissingColumns();
+  return Object.keys(missing).length === 0;
 }
 
 function getDdlClient(url: string): PrismaClient {
-  if (
-    !globalForSchema.ddlPrisma ||
-    globalForSchema.ddlPrismaUrl !== url
-  ) {
+  if (!globalForSchema.ddlPrisma || globalForSchema.ddlPrismaUrl !== url) {
     void globalForSchema.ddlPrisma?.$disconnect();
     globalForSchema.ddlPrismaUrl = url;
     globalForSchema.ddlPrisma = new PrismaClient({
@@ -91,21 +106,45 @@ async function applySchemaStatements(connectionUrl: string): Promise<void> {
   const client = getDdlClient(connectionUrl);
 
   for (const statement of SCHEMA_STATEMENTS) {
-    await client.$executeRawUnsafe(statement);
+    try {
+      await client.$executeRawUnsafe(statement);
+    } catch (error) {
+      console.error(
+        `[ensureSchema] Statement failed on ${safeHostname(connectionUrl)}:`,
+        statement,
+        error
+      );
+      throw error;
+    }
   }
 }
 
-async function runEnsureSchema(): Promise<void> {
-  if (await isSchemaComplete()) {
+function formatMissingColumns(missing: Record<string, string[]>): string {
+  return Object.entries(missing)
+    .map(([table, columns]) => `${table}(${columns.join(", ")})`)
+    .join(", ");
+}
+
+async function runEnsureSchema(): Promise<SchemaEnsureResult> {
+  const initialMissing = await getMissingColumns();
+  if (Object.keys(initialMissing).length === 0) {
     console.log("[ensureSchema] Schema already complete — skipping DDL");
-    return;
+    return { ok: true };
   }
+
+  console.log(
+    `[ensureSchema] Missing columns: ${formatMissingColumns(initialMissing)}`
+  );
 
   const candidates = getDirectDatabaseUrlCandidates();
   if (candidates.length === 0) {
-    throw new SchemaEnsureError(
-      "DATABASE_URL is not configured — cannot apply schema updates."
-    );
+    const message = "DATABASE_URL is not configured — cannot apply schema updates.";
+    console.error(`[ensureSchema] ${message}`);
+    return {
+      ok: false,
+      message,
+      missing: initialMissing,
+    };
   }
 
   console.log(
@@ -116,14 +155,18 @@ async function runEnsureSchema(): Promise<void> {
 
   for (const connectionUrl of candidates) {
     try {
-      const host = new URL(connectionUrl).hostname;
-      console.log(`[ensureSchema] Trying connection host: ${host}`);
+      console.log(`[ensureSchema] Trying connection host: ${safeHostname(connectionUrl)}`);
       await applySchemaStatements(connectionUrl);
 
-      if (await isSchemaComplete()) {
+      const remaining = await getMissingColumns();
+      if (Object.keys(remaining).length === 0) {
         console.log("[ensureSchema] Schema applied successfully");
-        return;
+        return { ok: true };
       }
+
+      console.warn(
+        `[ensureSchema] DDL ran but columns still missing: ${formatMissingColumns(remaining)}`
+      );
     } catch (error) {
       lastError = error;
       console.error(
@@ -133,10 +176,21 @@ async function runEnsureSchema(): Promise<void> {
     }
   }
 
-  throw new SchemaEnsureError(
-    "Could not apply database schema updates. Set DIRECT_URL to your Neon direct (non-pooler) connection string, or ensure DATABASE_URL can reach the database.",
+  const missing = await getMissingColumns();
+  const message =
+    "Could not apply database schema updates. Set DIRECT_URL to your Neon direct (non-pooler) connection string, or ensure DATABASE_URL can reach the database.";
+
+  console.error(
+    `[ensureSchema] ${message} Still missing: ${formatMissingColumns(missing)}`,
     lastError
   );
+
+  return {
+    ok: false,
+    message,
+    missing,
+    cause: lastError,
+  };
 }
 
 function safeHostname(connectionUrl: string): string {
@@ -147,12 +201,26 @@ function safeHostname(connectionUrl: string): string {
   }
 }
 
-export async function ensureSchema(): Promise<void> {
+export async function ensureSchema(): Promise<SchemaEnsureResult> {
   if (!globalForSchema.schemaEnsurePromise) {
     globalForSchema.schemaEnsurePromise = runEnsureSchema().catch((error) => {
       globalForSchema.schemaEnsurePromise = undefined;
-      throw error;
+      console.error("[ensureSchema] Unexpected failure:", error);
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : "Schema ensure failed",
+        missing: {},
+        cause: error,
+      } satisfies SchemaEnsureResult;
     });
   }
   return globalForSchema.schemaEnsurePromise;
+}
+
+/** Throws SchemaEnsureError — use when schema must be ready (e.g. registration). */
+export async function ensureSchemaOrThrow(): Promise<void> {
+  const result = await ensureSchema();
+  if (!result.ok) {
+    throw new SchemaEnsureError(result.message, result.cause);
+  }
 }

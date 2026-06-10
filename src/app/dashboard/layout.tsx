@@ -12,17 +12,36 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requirePageUser();
-  await ensureDatabaseReady();
-  const organiser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { stripeConnectOnboarded: true },
-  });
-  const payoutsReady = organiser?.stripeConnectOnboarded ?? false;
+  const schemaStatus = await ensureDatabaseReady();
+
+  let payoutsReady = false;
+  if (schemaStatus.ok) {
+    try {
+      const organiser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { stripeConnectOnboarded: true },
+      });
+      payoutsReady = organiser?.stripeConnectOnboarded ?? false;
+    } catch (error) {
+      console.error("[dashboard] Failed to load payout status:", error);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="mx-auto max-w-6xl px-4 py-8">
+        {!schemaStatus.ok && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+            <p className="text-sm font-medium text-red-900">
+              Database setup incomplete
+            </p>
+            <p className="mt-1 text-sm text-red-800">
+              Some dashboard data may be unavailable until migrations finish.
+              Try reloading in a moment, or contact support if this persists.
+            </p>
+          </div>
+        )}
         {!payoutsReady && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
             <p className="text-sm font-medium text-amber-900">

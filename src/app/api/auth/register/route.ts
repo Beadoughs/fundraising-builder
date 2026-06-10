@@ -1,6 +1,6 @@
 import { getClientErrorMessage } from "@/lib/api-errors";
 import { prisma } from "@/lib/db";
-import { ensureSchema } from "@/lib/ensure-schema";
+import { ensureSchemaOrThrow } from "@/lib/ensure-schema";
 import { hashPassword } from "@/lib/password";
 import {
   normalizeRegistrationEmail,
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = registerSchema.parse(body);
 
-    await ensureSchema();
+    await ensureSchemaOrThrow();
 
     const email = normalizeRegistrationEmail(data.email);
     const passwordHash = await hashPassword(data.password);

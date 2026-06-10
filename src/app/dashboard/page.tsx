@@ -13,32 +13,73 @@ const campaignInclude = {
   _count: { select: { orders: true, participants: true } },
 };
 
+const emptyOrgStats = {
+  revenue: 0,
+  profit: 0,
+  cost: 0,
+  orderCount: 0,
+  participantCount: 0,
+  campaignCount: 0,
+  liveCount: 0,
+};
+
+async function loadDashboardData(userId: string) {
+  try {
+    const [orgStats, activeCampaigns, archivedCampaigns] = await Promise.all([
+      getOrganisationStats(userId),
+      prisma.campaign.findMany({
+        where: { userId, archived: false },
+        include: {
+          ...campaignInclude,
+          orders: {
+            where: { status: "paid" as const },
+            include: { items: true },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.campaign.findMany({
+        where: { userId, archived: true },
+        include: campaignInclude,
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+
+    return {
+      ok: true as const,
+      orgStats,
+      activeCampaigns,
+      archivedCampaigns,
+    };
+  } catch (error) {
+    console.error("[dashboard] Failed to load dashboard data:", error);
+    return {
+      ok: false as const,
+      orgStats: emptyOrgStats,
+      activeCampaigns: [],
+      archivedCampaigns: [],
+    };
+  }
+}
+
 export default async function DashboardPage() {
   const user = await requirePageUser();
-  const userId = user.id;
-
-  const [orgStats, activeCampaigns, archivedCampaigns] = await Promise.all([
-    getOrganisationStats(userId),
-    prisma.campaign.findMany({
-      where: { userId, archived: false },
-      include: {
-        ...campaignInclude,
-        orders: {
-          where: { status: "paid" as const },
-          include: { items: true },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-    }),
-    prisma.campaign.findMany({
-      where: { userId, archived: true },
-      include: campaignInclude,
-      orderBy: { updatedAt: "desc" },
-    }),
-  ]);
+  const data = await loadDashboardData(user.id);
+  const { orgStats, activeCampaigns, archivedCampaigns } = data;
 
   return (
     <div>
+      {!data.ok && (
+        <Card className="mb-6 border-amber-200 bg-amber-50 py-4 text-center">
+          <p className="text-sm font-medium text-amber-900">
+            We couldn&apos;t load your stats right now
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            Your account is fine — try reloading the page in a moment.
+          </p>
+        </Card>
+      )}
+
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
           label="Total revenue"
@@ -81,17 +122,21 @@ export default async function DashboardPage() {
       {activeCampaigns.length === 0 ? (
         <Card className="py-12 text-center">
           <p className="text-lg font-medium text-gray-900">
-            Launch your first fundraiser
+            {data.ok ? "Launch your first fundraiser" : "Dashboard data unavailable"}
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Set up your products and go live in under 5 minutes.
+            {data.ok
+              ? "Set up your products and go live in under 5 minutes."
+              : "Try reloading the page. If this keeps happening, contact support."}
           </p>
-          <Link
-            href="/dashboard/campaigns/new"
-            className="mt-6 inline-flex rounded-lg bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
-          >
-            Start a fundraiser
-          </Link>
+          {data.ok && (
+            <Link
+              href="/dashboard/campaigns/new"
+              className="mt-6 inline-flex rounded-lg bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              Start a fundraiser
+            </Link>
+          )}
         </Card>
       ) : (
         <div className="space-y-4">
