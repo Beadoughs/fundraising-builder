@@ -1,8 +1,10 @@
 import {
   createConnectOnboardingLink,
+  getConnectClientError,
   getOrCreateConnectAccount,
   isConnectConfigured,
 } from "@/lib/connect";
+import { prisma } from "@/lib/db";
 import { requireApiUser } from "@/lib/session";
 import { NextResponse } from "next/server";
 
@@ -17,7 +19,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const email = authResult.user.email;
+  const user = await prisma.user.findUnique({
+    where: { id: authResult.user.id },
+    select: { email: true },
+  });
+  const email = user?.email?.trim();
   if (!email) {
     return NextResponse.json({ error: "User email is required" }, { status: 400 });
   }
@@ -31,7 +37,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Connect onboard error:", error);
     return NextResponse.json(
-      { error: "Failed to start payout setup" },
+      { error: getConnectClientError(error, "Failed to start payout setup") },
       { status: 500 }
     );
   }

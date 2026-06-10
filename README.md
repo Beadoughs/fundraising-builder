@@ -130,6 +130,19 @@ Set these in Vercel → **Settings** → **Environment Variables** (Production),
 | `POSTMARK_SERVER_TOKEN` | Postmark server token |
 | `EMAIL_FROM` | Verified sender in Postmark (e.g. `Beadoughs <noreply@yourdomain.com>`) |
 
+#### Stripe Connect (required for organiser payouts)
+
+Organisers must complete Connect onboarding before live fundraisers accept payments. In [Stripe Dashboard → Connect](https://dashboard.stripe.com/connect):
+
+1. Click **Get started** and choose a **Platform or marketplace** integration.
+2. Complete your **platform profile** (business details, branding).
+3. Under **Settings → Connect**, confirm Express accounts are allowed.
+4. Use your **live** secret key (`sk_live_…`) in Vercel `STRIPE_SECRET_KEY` for production.
+
+Optional: set `STRIPE_CONNECT_DEFAULT_COUNTRY=AU` (defaults to `AU`) if connected accounts should be created in a specific country.
+
+Set `CONNECT_DEBUG=1` in Vercel temporarily to surface Stripe error details in the payout UI while troubleshooting.
+
 #### Stripe webhook (required for paid orders)
 
 Orders stay `pending` until Stripe calls your webhook. In [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks):

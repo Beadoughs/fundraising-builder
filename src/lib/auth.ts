@@ -52,6 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
         token.onboardingComplete = user.onboardingComplete;
         token.name = user.name;
       }
@@ -68,6 +69,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        if (typeof token.email === "string") {
+          session.user.email = token.email;
+        }
         session.user.name = (token.name as string | null) ?? null;
         session.user.onboardingComplete = Boolean(token.onboardingComplete);
       }

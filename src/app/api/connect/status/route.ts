@@ -1,4 +1,9 @@
-import { isConnectAccountReady, isConnectConfigured, syncConnectOnboardingStatus } from "@/lib/connect";
+import {
+  getConnectClientError,
+  isConnectAccountReady,
+  isConnectConfigured,
+  syncConnectOnboardingStatus,
+} from "@/lib/connect";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { requireApiUser } from "@/lib/session";
@@ -43,7 +48,7 @@ export async function GET() {
   } catch (error) {
     console.error("Connect status error:", error);
     return NextResponse.json(
-      { error: "Failed to check payout status" },
+      { error: getConnectClientError(error, "Failed to check payout status") },
       { status: 500 }
     );
   }
