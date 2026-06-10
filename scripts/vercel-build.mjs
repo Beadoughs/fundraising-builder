@@ -1,5 +1,18 @@
 import { execSync } from "node:child_process";
 
+function deriveDirectDatabaseUrl(databaseUrl) {
+  try {
+    const parsed = new URL(databaseUrl);
+    if (parsed.hostname.includes("-pooler")) {
+      parsed.hostname = parsed.hostname.replace("-pooler", "");
+      return parsed.toString();
+    }
+    return databaseUrl;
+  } catch {
+    return databaseUrl.replace(/-pooler(?=\.)/, "");
+  }
+}
+
 function run(command, env = process.env) {
   execSync(command, { stdio: "inherit", env });
 }
@@ -11,12 +24,13 @@ if (process.env.DATABASE_URL || process.env.DIRECT_URL) {
 
   if (process.env.DIRECT_URL) {
     console.log("DIRECT_URL is set — running prisma migrate deploy via direct connection");
-  } else {
-    console.warn(
-      "DIRECT_URL is not set at build time — running prisma migrate deploy with DATABASE_URL. " +
-        "This may fail with Neon pooled connections; set DIRECT_URL to the non-pooler URL."
+  } else if (process.env.DATABASE_URL) {
+    migrateEnv.DIRECT_URL = deriveDirectDatabaseUrl(process.env.DATABASE_URL);
+    console.log(
+      "DIRECT_URL is not set — derived direct connection from DATABASE_URL for migrate deploy"
     );
-    migrateEnv.DIRECT_URL = process.env.DATABASE_URL;
+  } else {
+    console.warn("Neither DIRECT_URL nor DATABASE_URL is set — skipping migrate deploy env setup.");
   }
 
   try {

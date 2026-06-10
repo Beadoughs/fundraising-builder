@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 
+import { SchemaEnsureError } from "@/lib/ensure-schema";
+
 const isDev = process.env.NODE_ENV === "development";
 const isRegisterDebug = process.env.REGISTER_DEBUG === "1";
 
@@ -17,6 +19,18 @@ export function getClientErrorMessage(
   error: unknown,
   fallback: string
 ): { message: string; status: number } {
+  if (error instanceof SchemaEnsureError) {
+    console.error("Database schema ensure failed:", error.message, error.cause);
+    return {
+      message:
+        debugDetail(error) ??
+        (isDev
+          ? error.message
+          : "Registration is temporarily unavailable. Please try again shortly."),
+      status: 503,
+    };
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       return {

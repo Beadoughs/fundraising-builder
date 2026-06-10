@@ -13,19 +13,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    try {
-      await ensureSchema();
-    } catch (schemaError) {
-      console.error(
-        "[register] ensureSchema failed before account creation. " +
-          "Set DIRECT_URL in Vercel to your Neon direct (non-pooler) connection string, then redeploy.",
-        schemaError
-      );
-      throw schemaError;
-    }
-
     const body = await request.json();
     const data = registerSchema.parse(body);
+
+    await ensureSchema();
+
     const email = normalizeRegistrationEmail(data.email);
     const passwordHash = await hashPassword(data.password);
 
