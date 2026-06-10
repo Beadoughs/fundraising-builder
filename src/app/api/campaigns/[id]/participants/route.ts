@@ -35,7 +35,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const authResult = await requireApiUser();
   if (authResult.response) return authResult.response;
 
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   const { id } = await context.params;
 
   if (!(await getOwnedCampaign(id, authResult.user.id))) {
@@ -55,7 +55,7 @@ export async function POST(request: Request, context: RouteContext) {
   if (authResult.response) return authResult.response;
 
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const { id } = await context.params;
 
     if (!(await getOwnedCampaign(id, authResult.user.id))) {

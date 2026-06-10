@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { ensureDatabaseReady } from "@/lib/db-init";
 import { prisma } from "@/lib/db";
 import { requirePageUser } from "@/lib/session";
 import Link from "next/link";
@@ -11,6 +12,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requirePageUser();
+  await ensureDatabaseReady();
   const organiser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { stripeConnectOnboarded: true },

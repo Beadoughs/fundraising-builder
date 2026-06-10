@@ -35,7 +35,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const authResult = await requireApiUser();
   if (authResult.response) return authResult.response;
 
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   const { id } = await context.params;
   const owned = await getOwnedCampaign(id, authResult.user.id);
   if (!owned) {
@@ -72,7 +72,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (authResult.response) return authResult.response;
 
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const { id } = await context.params;
     const existing = await getOwnedCampaign(id, authResult.user.id);
     if (!existing) {
@@ -153,7 +153,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const authResult = await requireApiUser();
   if (authResult.response) return authResult.response;
 
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   const { id } = await context.params;
   const existing = await getOwnedCampaign(id, authResult.user.id);
   if (!existing) {

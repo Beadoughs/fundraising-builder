@@ -68,7 +68,7 @@ export async function getCampaignActivity(
   campaignId: string,
   limit = 12
 ): Promise<ActivityItem[]> {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const orders = await prisma.order.findMany({
     where: { campaignId, status: "paid" },

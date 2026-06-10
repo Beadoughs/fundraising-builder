@@ -9,13 +9,16 @@ const globalForSchema = globalThis as unknown as {
   ddlPrismaUrl?: string;
 };
 
-const REQUIRED_USER_COLUMNS = [
-  "passwordHash",
-  "orgName",
-  "onboardingComplete",
-  "stripeConnectAccountId",
-  "stripeConnectOnboarded",
-] as const;
+const REQUIRED_TABLE_COLUMNS = {
+  User: [
+    "passwordHash",
+    "orgName",
+    "onboardingComplete",
+    "stripeConnectAccountId",
+    "stripeConnectOnboarded",
+  ],
+  Campaign: ["endDate"],
+} as const;
 
 /**
  * Applies pending schema changes idempotently at runtime.
@@ -30,6 +33,7 @@ const SCHEMA_STATEMENTS = [
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeConnectOnboarded" BOOLEAN NOT NULL DEFAULT false`,
   `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "passwordHash" TEXT`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "User_stripeConnectAccountId_key" ON "User"("stripeConnectAccountId")`,
+  `ALTER TABLE "Campaign" ADD COLUMN IF NOT EXISTS "endDate" TIMESTAMP(3)`,
 ];
 
 export class SchemaEnsureError extends Error {
@@ -42,16 +46,29 @@ export class SchemaEnsureError extends Error {
   }
 }
 
-async function isUserSchemaComplete(): Promise<boolean> {
+async function tableHasRequiredColumns(
+  tableName: string,
+  columns: readonly string[]
+): Promise<boolean> {
   const rows = await prisma.$queryRaw<{ column_name: string }[]>`
     SELECT column_name
     FROM information_schema.columns
     WHERE table_schema = 'public'
-      AND table_name = 'User'
-      AND column_name IN (${Prisma.join([...REQUIRED_USER_COLUMNS])})
+      AND table_name = ${tableName}
+      AND column_name IN (${Prisma.join([...columns])})
   `;
 
-  return rows.length === REQUIRED_USER_COLUMNS.length;
+  return rows.length === columns.length;
+}
+
+async function isSchemaComplete(): Promise<boolean> {
+  const checks = await Promise.all(
+    Object.entries(REQUIRED_TABLE_COLUMNS).map(([table, columns]) =>
+      tableHasRequiredColumns(table, columns)
+    )
+  );
+
+  return checks.every(Boolean);
 }
 
 function getDdlClient(url: string): PrismaClient {
@@ -79,8 +96,8 @@ async function applySchemaStatements(connectionUrl: string): Promise<void> {
 }
 
 async function runEnsureSchema(): Promise<void> {
-  if (await isUserSchemaComplete()) {
-    console.log("[ensureSchema] User table schema already complete — skipping DDL");
+  if (await isSchemaComplete()) {
+    console.log("[ensureSchema] Schema already complete — skipping DDL");
     return;
   }
 
@@ -103,7 +120,7 @@ async function runEnsureSchema(): Promise<void> {
       console.log(`[ensureSchema] Trying connection host: ${host}`);
       await applySchemaStatements(connectionUrl);
 
-      if (await isUserSchemaComplete()) {
+      if (await isSchemaComplete()) {
         console.log("[ensureSchema] Schema applied successfully");
         return;
       }

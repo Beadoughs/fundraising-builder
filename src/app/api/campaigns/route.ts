@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   const userId = authResult.user.id;
 
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const body = await request.json();
     const data = campaignSchema.parse(body);
     const slug = await uniqueSlug(data.name);

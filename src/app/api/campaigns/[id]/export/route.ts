@@ -27,7 +27,7 @@ export async function GET(request: Request, context: RouteContext) {
   const authResult = await requireApiUser();
   if (authResult.response) return authResult.response;
 
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   const { id } = await context.params;
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "orders";

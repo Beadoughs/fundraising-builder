@@ -19,7 +19,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const authResult = await requireApiUser();
   if (authResult.response) return authResult.response;
 
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   const { id, participantId } = await context.params;
 
   if (!(await getOwnedCampaign(id, authResult.user.id))) {
@@ -42,7 +42,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (authResult.response) return authResult.response;
 
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const { id, participantId } = await context.params;
 
     if (!(await getOwnedCampaign(id, authResult.user.id))) {

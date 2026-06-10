@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (authResult.response) return authResult.response;
 
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const { id, orderId } = await context.params;
 
     if (!(await getOwnedCampaign(id, authResult.user.id))) {

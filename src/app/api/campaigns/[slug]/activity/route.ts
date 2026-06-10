@@ -7,7 +7,7 @@ type RouteContext = { params: Promise<{ slug: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
-    ensureDatabaseReady();
+    await ensureDatabaseReady();
     const { slug } = await context.params;
 
     const campaign = await prisma.campaign.findFirst({

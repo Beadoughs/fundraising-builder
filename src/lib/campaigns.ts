@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 /** Campaign owned by the signed-in organiser. */
 export async function getOwnedCampaign(id: string, userId: string) {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
   return prisma.campaign.findFirst({
     where: { id, userId },
   });

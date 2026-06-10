@@ -46,7 +46,7 @@ export type FulfillmentSummary = {
 const PAID = { status: "paid" as const };
 
 export async function getCampaignStats(campaignId: string): Promise<CampaignStats | null> {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const [campaign, participantCount] = await Promise.all([
     prisma.campaign.findUnique({
@@ -86,7 +86,7 @@ export async function getCampaignStats(campaignId: string): Promise<CampaignStat
 }
 
 export async function getOrganisationStats(userId: string) {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const [campaigns, participantCount] = await Promise.all([
     prisma.campaign.findMany({
@@ -118,7 +118,7 @@ export async function getOrganisationStats(userId: string) {
 export async function getParticipantStats(
   campaignId: string
 ): Promise<ParticipantStats[]> {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const participants = await prisma.participant.findMany({
     where: { campaignId },
@@ -156,7 +156,7 @@ export async function getPublicLeaderboard(
 }
 
 export async function getProductStats(campaignId: string): Promise<ProductStats[]> {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const products = await prisma.product.findMany({
     where: { campaignId },
@@ -189,7 +189,7 @@ export async function getProductStats(campaignId: string): Promise<ProductStats[
 export async function getFulfillmentSummary(
   campaignId: string
 ): Promise<FulfillmentSummary> {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const orders = await prisma.order.findMany({
     where: { campaignId, status: "paid" },
@@ -212,7 +212,7 @@ export async function getFulfillmentSummary(
 }
 
 export async function getCollectionList(campaignId: string) {
-  ensureDatabaseReady();
+  await ensureDatabaseReady();
 
   const items = await prisma.orderItem.findMany({
     where: { order: { campaignId, status: "paid" } },
