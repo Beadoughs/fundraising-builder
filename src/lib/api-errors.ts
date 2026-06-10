@@ -1,6 +1,17 @@
 import { Prisma } from "@prisma/client";
 
 const isDev = process.env.NODE_ENV === "development";
+const isRegisterDebug = process.env.REGISTER_DEBUG === "1";
+
+function debugDetail(error: unknown): string | undefined {
+  if (!isRegisterDebug || !(error instanceof Error)) {
+    return undefined;
+  }
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return `${error.code}: ${error.message}`;
+  }
+  return error.message;
+}
 
 export function getClientErrorMessage(
   error: unknown,
@@ -18,9 +29,11 @@ export function getClientErrorMessage(
     if (error.code === "P2021" || error.code === "P2022") {
       console.error("Database schema mismatch:", error.code, error.message);
       return {
-        message: isDev
-          ? `Database schema out of date (${error.code}): ${error.message}`
-          : "Registration is temporarily unavailable. Please try again shortly.",
+        message:
+          debugDetail(error) ??
+          (isDev
+            ? `Database schema out of date (${error.code}): ${error.message}`
+            : "Registration is temporarily unavailable. Please try again shortly."),
         status: 503,
       };
     }
@@ -29,21 +42,29 @@ export function getClientErrorMessage(
   if (error instanceof Prisma.PrismaClientInitializationError) {
     console.error("Database connection failed:", error.message);
     return {
-      message: isDev
-        ? `Database connection failed: ${error.message}`
-        : "Registration is temporarily unavailable. Please try again shortly.",
+      message:
+        debugDetail(error) ??
+        (isDev
+          ? `Database connection failed: ${error.message}`
+          : "Registration is temporarily unavailable. Please try again shortly."),
       status: 503,
     };
   }
 
   if (error instanceof Error) {
-    console.error(fallback, error.message, error.stack);
+    console.error(fallback, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
   } else {
     console.error(fallback, error);
   }
 
   return {
-    message: isDev && error instanceof Error ? error.message : fallback,
+    message:
+      debugDetail(error) ??
+      (isDev && error instanceof Error ? error.message : fallback),
     status: 500,
   };
 }

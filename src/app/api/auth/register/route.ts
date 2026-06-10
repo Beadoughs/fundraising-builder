@@ -1,10 +1,11 @@
 import { getClientErrorMessage } from "@/lib/api-errors";
+import { prisma } from "@/lib/db";
+import { ensureSchema } from "@/lib/ensure-schema";
 import { hashPassword } from "@/lib/password";
 import {
   normalizeRegistrationEmail,
   registerSchema,
 } from "@/lib/register";
-import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -12,6 +13,8 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    await ensureSchema();
+
     const body = await request.json();
     const data = registerSchema.parse(body);
     const email = normalizeRegistrationEmail(data.email);
