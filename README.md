@@ -132,7 +132,7 @@ Set these in Vercel → **Settings** → **Environment Variables** (Production),
 
 #### Stripe Connect (required for organiser payouts)
 
-Organisers must complete Connect onboarding before live fundraisers accept payments. In [Stripe Dashboard → Connect](https://dashboard.stripe.com/connect):
+Organisers can publish fundraisers without Connect; checkout collects payments on the platform account until payout setup is complete. For direct organiser payouts, complete Connect onboarding. In [Stripe Dashboard → Connect](https://dashboard.stripe.com/connect):
 
 1. Click **Get started** and choose a **Platform or marketplace** integration.
 2. Complete your **platform profile** (business details, branding).

@@ -81,22 +81,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     const body = await request.json();
     const data = updateSchema.parse(body);
 
-    if (data.published === true) {
-      const organiser = await prisma.user.findUnique({
-        where: { id: authResult.user.id },
-        select: { stripeConnectOnboarded: true },
-      });
-      if (!organiser?.stripeConnectOnboarded) {
-        return NextResponse.json(
-          {
-            error:
-              "Complete payout setup before publishing. Go to Dashboard → Payouts.",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
     if (data.products) {
       await prisma.product.deleteMany({ where: { campaignId: id } });
       await prisma.product.createMany({

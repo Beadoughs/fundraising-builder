@@ -50,18 +50,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
-    if (
-      !campaign.user.stripeConnectOnboarded ||
-      !campaign.user.stripeConnectAccountId
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "This fundraiser is not accepting payments yet. The organiser needs to complete payout setup.",
-        },
-        { status: 503 }
-      );
-    }
+    const hasConnectPayouts =
+      campaign.user.stripeConnectOnboarded &&
+      Boolean(campaign.user.stripeConnectAccountId);
 
     let participantId: string | undefined;
     if (data.participantSlug) {
@@ -159,10 +150,10 @@ export async function POST(request: Request) {
       cancel_url: `${origin}/c/${campaign.slug}?cancelled=1`,
     };
 
-    if (profit > 0) {
+    if (hasConnectPayouts && profit > 0) {
       sessionParams.payment_intent_data = {
         transfer_data: {
-          destination: campaign.user.stripeConnectAccountId,
+          destination: campaign.user.stripeConnectAccountId!,
         },
         application_fee_amount: totalCost,
       };
