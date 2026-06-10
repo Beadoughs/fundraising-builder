@@ -12,6 +12,7 @@ export type CampaignDraft = {
   description: string;
   logoUrl: string;
   goalAmount: string;
+  endDate: string;
   leaderboardEnabled: boolean;
   products: ProductDraft[];
 };
@@ -24,12 +25,17 @@ export const emptyProduct = (): ProductDraft => ({
   quantityLimit: "",
 });
 
+function formatDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 export function campaignToDraft(campaign: {
   name: string;
   orgName: string;
   description: string | null;
   logoUrl: string | null;
   goalAmount: number | null;
+  endDate?: Date | null;
   leaderboardEnabled?: boolean;
   products: {
     name: string;
@@ -47,6 +53,7 @@ export function campaignToDraft(campaign: {
     goalAmount: campaign.goalAmount
       ? String(campaign.goalAmount / 100)
       : "",
+    endDate: campaign.endDate ? formatDateInputValue(campaign.endDate) : "",
     leaderboardEnabled: campaign.leaderboardEnabled ?? true,
     products: campaign.products.length
       ? campaign.products.map((p) => ({

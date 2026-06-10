@@ -1,8 +1,11 @@
 import { PublicCampaignStore } from "@/components/PublicCampaignStore";
 import { GoalProgress } from "@/components/dashboard/GoalProgress";
-import { Leaderboard } from "@/components/dashboard/Leaderboard";
+import { ActivityFeed } from "@/components/public/ActivityFeed";
+import { CountdownTimer } from "@/components/public/CountdownTimer";
+import { LiveLeaderboard } from "@/components/public/LiveLeaderboard";
 import { SafeImage } from "@/components/SafeImage";
-import { getParticipantStats } from "@/lib/fundraising-stats";
+import { getCampaignActivity } from "@/lib/campaign-activity";
+import { getPublicLeaderboard } from "@/lib/fundraising-stats";
 import { goalProgressPercent } from "@/lib/profit";
 import { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
@@ -41,7 +44,12 @@ export default async function ParticipantStorePage({
   const totalRaised = sumRevenue(allItems);
   const goalProgress = goalProgressPercent(totalRaised, campaign.goalAmount);
 
-  const participantStats = await getParticipantStats(campaign.id);
+  const [participantStats, activities] = await Promise.all([
+    campaign.leaderboardEnabled
+      ? getPublicLeaderboard(campaign.id)
+      : Promise.resolve([]),
+    getCampaignActivity(campaign.id),
+  ]);
   const sellerStats = participantStats.find((p) => p.id === participant.id);
 
   return (
@@ -67,11 +75,17 @@ export default async function ParticipantStorePage({
             {participant.team && ` · ${participant.team}`}
           </p>
 
-          {sellerStats && sellerStats.orderCount > 0 && (
+          {sellerStats && sellerStats.revenue > 0 && (
             <p className="mt-3 text-sm font-semibold text-emerald-600">
-              {participant.name} has raised {formatCurrency(sellerStats.profit)}{" "}
-              profit so far
+              {participant.name} has raised {formatCurrency(sellerStats.revenue)}{" "}
+              so far
             </p>
+          )}
+
+          {campaign.endDate && (
+            <div className="mx-auto mt-6 max-w-sm">
+              <CountdownTimer endDate={campaign.endDate.toISOString()} />
+            </div>
           )}
 
           {(campaign.goalAmount || totalRaised > 0) && (
@@ -95,24 +109,34 @@ export default async function ParticipantStorePage({
         </div>
       )}
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Order now</h2>
-        <PublicCampaignStore
-          slug={campaign.slug}
-          participantSlug={participantSlug}
-          products={campaign.products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            imageUrl: p.imageUrl,
-            quantityLimit: p.quantityLimit,
-          }))}
-        />
+      <main className="mx-auto max-w-2xl space-y-8 px-4 py-8">
+        <ActivityFeed slug={campaign.slug} initialActivities={activities} />
 
-        {campaign.leaderboardEnabled && participantStats.length > 1 && (
-          <div className="mt-12">
-            <Leaderboard entries={participantStats} title="Seller leaderboard" />
-          </div>
+        <section>
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Order now</h2>
+          <PublicCampaignStore
+            slug={campaign.slug}
+            participantSlug={participantSlug}
+            products={campaign.products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              imageUrl: p.imageUrl,
+              quantityLimit: p.quantityLimit,
+            }))}
+          />
+        </section>
+
+        {campaign.leaderboardEnabled && participantStats.length > 0 && (
+          <LiveLeaderboard
+            entries={participantStats.map((p) => ({
+              id: p.id,
+              name: p.name,
+              team: p.team,
+              revenue: p.revenue,
+            }))}
+            title="Seller leaderboard"
+          />
         )}
       </main>
 

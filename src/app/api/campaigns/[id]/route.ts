@@ -21,6 +21,7 @@ const updateSchema = z.object({
   description: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   goalAmount: z.number().int().positive().optional().nullable(),
+  endDate: z.string().datetime().optional().nullable(),
   templateId: z.string().optional().nullable(),
   leaderboardEnabled: z.boolean().optional(),
   published: z.boolean().optional(),
@@ -102,6 +103,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       description?: string | null;
       logoUrl?: string | null;
       goalAmount?: number | null;
+      endDate?: Date | null;
       templateId?: string | null;
       leaderboardEnabled?: boolean;
       published?: boolean;
@@ -113,6 +115,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.goalAmount !== undefined) updateData.goalAmount = data.goalAmount;
+    if (data.endDate !== undefined) {
+      updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+    }
     if (data.templateId !== undefined) updateData.templateId = data.templateId;
     if (data.leaderboardEnabled !== undefined)
       updateData.leaderboardEnabled = data.leaderboardEnabled;

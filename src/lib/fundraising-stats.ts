@@ -145,6 +145,16 @@ export async function getParticipantStats(
     .sort((a, b) => b.profit - a.profit);
 }
 
+/** Public leaderboard: participants ranked by amount raised (revenue). */
+export async function getPublicLeaderboard(
+  campaignId: string
+): Promise<ParticipantStats[]> {
+  const participants = await getParticipantStats(campaignId);
+  return participants
+    .filter((p) => p.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue);
+}
+
 export async function getProductStats(campaignId: string): Promise<ProductStats[]> {
   ensureDatabaseReady();
 

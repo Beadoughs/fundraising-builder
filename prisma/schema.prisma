@@ -68,6 +68,7 @@ model Campaign {
   description        String?
   logoUrl            String?
   goalAmount         Int?
+  endDate            DateTime?
   templateId         String?
   leaderboardEnabled Boolean       @default(true)
   published          Boolean       @default(false)

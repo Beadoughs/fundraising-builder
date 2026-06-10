@@ -33,6 +33,7 @@ export function CampaignBuilder({ initial, mode, defaultOrgName }: CampaignBuild
       description: "",
       logoUrl: "",
       goalAmount: "",
+      endDate: "",
       leaderboardEnabled: true,
       products: [emptyProduct()],
     }
@@ -129,12 +130,22 @@ export function CampaignBuilder({ initial, mode, defaultOrgName }: CampaignBuild
       goalAmount = goalCents;
     }
 
+    let endDate: string | null = null;
+    if (form.endDate.trim()) {
+      const parsed = new Date(`${form.endDate.trim()}T23:59:59.999Z`);
+      if (Number.isNaN(parsed.getTime())) {
+        throw new Error("Enter a valid campaign end date");
+      }
+      endDate = parsed.toISOString();
+    }
+
     return {
       name: form.name.trim(),
       orgName: form.orgName.trim(),
       description: form.description.trim() || null,
       logoUrl: form.logoUrl || null,
       goalAmount,
+      endDate,
       leaderboardEnabled: form.leaderboardEnabled,
       products,
     };
@@ -244,6 +255,19 @@ export function CampaignBuilder({ initial, mode, defaultOrgName }: CampaignBuild
               onChange={(e) => updateField("goalAmount", e.target.value)}
             />
           </div>
+        </FieldGroup>
+
+        <FieldGroup>
+          <Label htmlFor="endDate">Campaign end date (optional)</Label>
+          <Input
+            id="endDate"
+            type="date"
+            value={form.endDate}
+            onChange={(e) => updateField("endDate", e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-gray-500">
+            Shows a live countdown on your public page to create urgency.
+          </p>
         </FieldGroup>
 
         <FieldGroup className="mb-0">

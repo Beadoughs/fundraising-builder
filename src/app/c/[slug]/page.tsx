@@ -1,8 +1,11 @@
 import { GoalProgress } from "@/components/dashboard/GoalProgress";
 import { PublicCampaignStore } from "@/components/PublicCampaignStore";
-import { Leaderboard } from "@/components/dashboard/Leaderboard";
+import { ActivityFeed } from "@/components/public/ActivityFeed";
+import { CountdownTimer } from "@/components/public/CountdownTimer";
+import { LiveLeaderboard } from "@/components/public/LiveLeaderboard";
 import { prisma } from "@/lib/db";
-import { getParticipantStats } from "@/lib/fundraising-stats";
+import { getCampaignActivity } from "@/lib/campaign-activity";
+import { getPublicLeaderboard } from "@/lib/fundraising-stats";
 import { goalProgressPercent, sumRevenue } from "@/lib/profit";
 import { SafeImage } from "@/components/SafeImage";
 import Link from "next/link";
@@ -57,9 +60,13 @@ export default async function PublicCampaignPage({
   const allItems = campaign.orders.flatMap((o) => o.items);
   const totalRaised = sumRevenue(allItems);
   const goalProgress = goalProgressPercent(totalRaised, campaign.goalAmount);
-  const participants = campaign.leaderboardEnabled
-    ? await getParticipantStats(campaign.id)
-    : [];
+
+  const [participants, activities] = await Promise.all([
+    campaign.leaderboardEnabled
+      ? getPublicLeaderboard(campaign.id)
+      : Promise.resolve([]),
+    getCampaignActivity(campaign.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,6 +90,12 @@ export default async function PublicCampaignPage({
             <p className="mt-3 text-gray-600">{campaign.description}</p>
           )}
 
+          {campaign.endDate && (
+            <div className="mx-auto mt-6 max-w-sm">
+              <CountdownTimer endDate={campaign.endDate.toISOString()} />
+            </div>
+          )}
+
           {(campaign.goalAmount || totalRaised > 0) && (
             <div className="mx-auto mt-6 max-w-sm">
               <GoalProgress
@@ -104,25 +117,35 @@ export default async function PublicCampaignPage({
         </div>
       )}
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          Order now
-        </h2>
-        <PublicCampaignStore
-          slug={campaign.slug}
-          products={campaign.products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            imageUrl: p.imageUrl,
-            quantityLimit: p.quantityLimit,
-          }))}
-        />
+      <main className="mx-auto max-w-2xl space-y-8 px-4 py-8">
+        <ActivityFeed slug={campaign.slug} initialActivities={activities} />
 
-        {participants.length > 0 && (
-          <div className="mt-12">
-            <Leaderboard entries={participants} title="Top sellers" />
-          </div>
+        <section>
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Order now
+          </h2>
+          <PublicCampaignStore
+            slug={campaign.slug}
+            products={campaign.products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              imageUrl: p.imageUrl,
+              quantityLimit: p.quantityLimit,
+            }))}
+          />
+        </section>
+
+        {campaign.leaderboardEnabled && (
+          <LiveLeaderboard
+            entries={participants.map((p) => ({
+              id: p.id,
+              name: p.name,
+              team: p.team,
+              revenue: p.revenue,
+            }))}
+            title="Live leaderboard"
+          />
         )}
       </main>
 
